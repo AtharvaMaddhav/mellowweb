@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SideBar from "../SideBar/SideBar.jsx";
 import { Globe, Lock, Filter } from "lucide-react";
 import RecommendedGoalsSection from "./RecommendedGoalsSection";
@@ -6,11 +6,15 @@ import PublicGoals from "./PublicGoals";
 import PrivateGoals from "./PrivateGoals";
 import CreateGoal from "./CreateGoal";
 import FilterGoals from "./FilterGoals";
+import { db }  from "../../config/firebase";
+import { collection, addDoc, getDocs, query, where, serverTimestamp } from "firebase/firestore";
 
 const Goals = () => {
   const [activeTab, setActiveTab] = useState("public");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [publicGoals, setPublicGoals] = useState([]);
+  const [privateGoals, setPrivateGoals] = useState([]);
   const [activeFilters, setActiveFilters] = useState({
     status: [],
     dateRange: {
@@ -21,13 +25,93 @@ const Goals = () => {
     sortBy: "newest"
   });
   const [isFiltering, setIsFiltering] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Current user ID - In a real app, this would come from authentication
+  const currentUserId = "4Avy2gnDizxdsWRMYL2i";
 
-  const handleCreateGoal = (goalData) => {
-    // Here you would typically handle saving the goal to your backend
-    console.log("New goal created:", goalData);
+  // Fetch goals from Firestore on component mount
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Create queries for public and private goals
+        const publicQuery = query(
+          collection(db, "goals"), 
+          where("goalType", "==", "public")
+        );
+        
+        const privateQuery = query(
+          collection(db, "goals"), 
+          where("goalType", "==", "private"),
+          where("userId", "==", currentUserId)
+        );
+        
+        // Fetch goals
+        const publicSnapshot = await getDocs(publicQuery);
+        const privateSnapshot = await getDocs(privateQuery);
+        
+        // Convert snapshots to arrays with IDs
+        const publicGoalsData = publicSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        const privateGoalsData = privateSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Update state
+        setPublicGoals(publicGoalsData);
+        setPrivateGoals(privateGoalsData);
+      } catch (error) {
+        console.error("Error fetching goals:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // For now, we'll just log the data, but in a real application, 
-    // you would add this to your state or send it to your API
+    fetchGoals();
+  }, [currentUserId]);
+
+  const handleCreateGoal = async (goalData) => {
+    try {
+      // Format the data for Firestore
+      const newGoal = {
+        title: goalData.title,
+        description: goalData.description,
+        startDate: new Date(goalData.startDate),
+        endDate: new Date(goalData.endDate),
+        goalImage: goalData.image ? goalData.image.name : "",
+        goalType: goalData.isPublic ? "public" : "private",
+        userId: currentUserId,
+        members: [currentUserId],
+        numberOfUsersCompleted: 0,
+        completed: false,
+        createdAt: serverTimestamp()
+      };
+      
+      // Add document to Firestore
+      const docRef = await addDoc(collection(db, "goals"), newGoal);
+      console.log("New goal created with ID:", docRef.id);
+      
+      // Add the goal to the local state with the new ID
+      const goalWithId = { id: docRef.id, ...newGoal };
+      
+      if (goalData.isPublic) {
+        setPublicGoals(prevGoals => [goalWithId, ...prevGoals]);
+      } else {
+        setPrivateGoals(prevGoals => [goalWithId, ...prevGoals]);
+      }
+      
+      // Automatically switch to the tab where the goal was added
+      setActiveTab(goalData.isPublic ? "public" : "private");
+    } catch (error) {
+      console.error("Error creating goal:", error);
+      alert("Failed to create goal. Please try again.");
+    }
   };
 
   const handleApplyFilters = (filters) => {
@@ -140,12 +224,23 @@ const Goals = () => {
             </button>
           </div>
 
-          {/* Goals Grid Layout - Conditionally rendered based on active tab */}
-          {/* You would pass activeFilters to these components to filter the goals */}
-          {activeTab === "public" ? 
-            <PublicGoals filters={isFiltering ? activeFilters : null} /> : 
-            <PrivateGoals filters={isFiltering ? activeFilters : null} />
-          }
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="text-center py-10">
+              <p className="text-gray-400">Loading goals...</p>
+            </div>
+          ) : (
+            /* Goals Grid Layout - Conditionally rendered based on active tab */
+            activeTab === "public" ? 
+              <PublicGoals 
+                goals={publicGoals}
+                filters={isFiltering ? activeFilters : null} 
+              /> : 
+              <PrivateGoals 
+                goals={privateGoals}
+                filters={isFiltering ? activeFilters : null} 
+              />
+          )}
         </div>
       </div>
 

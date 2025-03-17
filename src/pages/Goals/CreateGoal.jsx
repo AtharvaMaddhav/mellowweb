@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { X, Calendar, Image } from "lucide-react";
+import { storage } from "../../config/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
   const [goalData, setGoalData] = useState({
@@ -12,6 +14,7 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
   });
 
   const [previewImage, setPreviewImage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -40,10 +43,49 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onCreateGoal(goalData);
-    onClose();
+    setIsSubmitting(true);
+    
+    try {
+      let imageUrl = "";
+      
+      // Upload image to Firebase Storage if exists
+      if (goalData.image) {
+        const storageRef = ref(storage, `goalImages/${Date.now()}_${goalData.image.name}`);
+        const snapshot = await uploadBytes(storageRef, goalData.image);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      }
+      
+      // Create goal data with image URL
+      const finalGoalData = {
+        ...goalData,
+        image: imageUrl || "" // Use URL or empty string if no image
+      };
+      
+      // Submit data to parent component
+      await onCreateGoal(finalGoalData);
+      
+      // Reset form
+      setGoalData({
+        title: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        image: null,
+        isPublic: true
+      });
+      setPreviewImage(null);
+      
+      // Close modal
+      onClose();
+      
+    } catch (error) {
+      console.error("Error creating goal:", error);
+      alert("Failed to create goal. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -191,9 +233,12 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+              disabled={isSubmitting}
+              className={`w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors ${
+                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              Create Goal
+              {isSubmitting ? "Creating..." : "Create Goal"}
             </button>
           </div>
         </form>
