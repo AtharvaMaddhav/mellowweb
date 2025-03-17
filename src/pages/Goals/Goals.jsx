@@ -78,39 +78,50 @@ const Goals = () => {
 
   const handleCreateGoal = async (goalData) => {
     try {
-      // Format the data for Firestore
-      const newGoal = {
-        title: goalData.title,
-        description: goalData.description,
-        startDate: new Date(goalData.startDate),
-        endDate: new Date(goalData.endDate),
-        goalImage: goalData.image ? goalData.image.name : "",
-        goalType: goalData.isPublic ? "public" : "private",
-        userId: currentUserId,
-        members: [currentUserId],
-        numberOfUsersCompleted: 0,
-        completed: false,
-        createdAt: serverTimestamp()
-      };
+      // The goal is already created in the CreateGoal component
+      // So we just need to update the local state
       
-      // Add document to Firestore
-      const docRef = await addDoc(collection(db, "goals"), newGoal);
-      console.log("New goal created with ID:", docRef.id);
+      // Check if the goal exists in our local state
+      // (it should already be in Firestore from the CreateGoal component)
+      const goalExistsInPublic = publicGoals.some(goal => 
+        goal.title === goalData.title && 
+        goal.description === goalData.description &&
+        new Date(goal.startDate).toDateString() === new Date(goalData.startDate).toDateString());
+        
+      const goalExistsInPrivate = privateGoals.some(goal => 
+        goal.title === goalData.title && 
+        goal.description === goalData.description &&
+        new Date(goal.startDate).toDateString() === new Date(goalData.startDate).toDateString());
       
-      // Add the goal to the local state with the new ID
-      const goalWithId = { id: docRef.id, ...newGoal };
-      
-      if (goalData.isPublic) {
-        setPublicGoals(prevGoals => [goalWithId, ...prevGoals]);
-      } else {
-        setPrivateGoals(prevGoals => [goalWithId, ...prevGoals]);
+      // Only add to state if it doesn't exist yet
+      if (!goalExistsInPublic && !goalExistsInPrivate) {
+        const newGoal = {
+          id: goalData.id || `temp-${Date.now()}`, // Use the ID from Firestore or a temporary one
+          title: goalData.title,
+          description: goalData.description,
+          startDate: new Date(goalData.startDate),
+          endDate: new Date(goalData.endDate),
+          goalImage: goalData.goalImage || "", // Use the proper field name from CreateGoal
+          goalType: goalData.goalType, // Use the value already set in CreateGoal
+          userId: currentUserId,
+          members: [currentUserId],
+          numberOfUsersCompleted: 0,
+          completed: false,
+          createdAt: new Date() // Use client-side date as fallback
+        };
+        
+        if (goalData.goalType === "public") {
+          setPublicGoals(prevGoals => [newGoal, ...prevGoals]);
+        } else {
+          setPrivateGoals(prevGoals => [newGoal, ...prevGoals]);
+        }
       }
       
       // Automatically switch to the tab where the goal was added
-      setActiveTab(goalData.isPublic ? "public" : "private");
+      setActiveTab(goalData.goalType === "public" ? "public" : "private");
     } catch (error) {
-      console.error("Error creating goal:", error);
-      alert("Failed to create goal. Please try again.");
+      console.error("Error updating local state for goal:", error);
+      alert("Goal was created but there was an issue updating the view. Please refresh.");
     }
   };
 

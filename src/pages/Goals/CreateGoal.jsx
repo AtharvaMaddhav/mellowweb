@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { X, Calendar, Image } from "lucide-react";
-import { storage } from "../../config/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import axios from "axios";
+import { cloudinaryConfig } from "../../config/cloudinary.js"; // Update this path
+import { doc, setDoc, collection } from "firebase/firestore";
+import { db } from "../../config/firebase"; // Update this path to where your Firebase config is
 
 const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
   const [goalData, setGoalData] = useState({
@@ -15,6 +17,7 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
 
   const [previewImage, setPreviewImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   if (!isOpen) return null;
 
@@ -43,27 +46,63 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
     }
   };
 
+  const uploadImageToCloudinary = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+      
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`;
+      
+      const response = await axios.post(uploadUrl, formData, {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        }
+      });
+      
+      return response.data.secure_url;
+    } catch (error) {
+      console.error("Error uploading image to Cloudinary:", error);
+      throw new Error("Failed to upload image");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setUploadProgress(0);
     
     try {
       let imageUrl = "";
       
-      // Upload image to Firebase Storage if exists
+      // Upload image to Cloudinary if exists
       if (goalData.image) {
-        const storageRef = ref(storage, `goalImages/${Date.now()}_${goalData.image.name}`);
-        const snapshot = await uploadBytes(storageRef, goalData.image);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        imageUrl = await uploadImageToCloudinary(goalData.image);
       }
       
       // Create goal data with image URL
       const finalGoalData = {
-        ...goalData,
-        image: imageUrl || "" // Use URL or empty string if no image
+        title: goalData.title,
+        description: goalData.description,
+        startDate: goalData.startDate,
+        endDate: goalData.endDate,
+        goalImage: imageUrl || "", // Consistent field name
+        goalType: goalData.isPublic ? "public" : "private",
+        numberOfUsersCompleted: 0,
+        userId: "4Avy2gnDizxdsWRMYL2i", // Replace with actual user ID from auth
+        members: [] // Initialize empty members array
       };
       
-      // Submit data to parent component
+      // Get a new document reference with auto-generated ID
+      const newGoalRef = doc(collection(db, "goals"));
+      
+      // Set the document data using the finalGoalData object directly
+      await setDoc(newGoalRef, finalGoalData);
+      
+      // Submit data to parent component if needed
       await onCreateGoal(finalGoalData);
       
       // Reset form
@@ -82,14 +121,17 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
       
     } catch (error) {
       console.error("Error creating goal:", error);
-      alert("Failed to create goal. Please try again.");
+      alert(`Failed to create goal: ${error.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
+  // The rest of your component remains the same
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+      {/* Your existing JSX... */}
       <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full border border-gray-800 shadow-xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Create New Goal</h2>
@@ -142,6 +184,17 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
               />
             </div>
           </div>
+
+          {/* Show upload progress when submitting */}
+          {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div 
+                className="bg-purple-600 h-2.5 rounded-full" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+              <p className="text-xs text-gray-400 mt-1">Uploading image: {uploadProgress}%</p>
+            </div>
+          )}
 
           {/* Title */}
           <div>
