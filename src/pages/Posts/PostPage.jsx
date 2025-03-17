@@ -38,7 +38,7 @@ export default function PostSection() {
     loadPosts: loadPostsHandler,
     loadMorePosts: loadMorePostsHandler,
     formatTime,
-    REPORT_THRESHOLD
+    REPORT_THRESHOLD,
   } = usePostHandlers(currentUser, setPosts, posts);
 
   // Refs
@@ -64,15 +64,22 @@ export default function PostSection() {
 
   // Load more posts (pagination)
   const loadMorePosts = () => {
-    loadMorePostsHandler(lastVisible, setLoading, setLastVisible, setHasMore, loading, hasMore);
+    loadMorePostsHandler(
+      lastVisible,
+      setLoading,
+      setLastVisible,
+      setHasMore,
+      loading,
+      hasMore
+    );
   };
 
   // Check for expired posts periodically
   useEffect(() => {
     const runCheck = () => checkAndDeleteExpiredAndReportedPosts();
-    
-    // Set up interval to check every few seconds
-    const interval = setInterval(runCheck, 5000);
+
+    // Set up interval to check every 1 hour
+    const interval = setInterval(runCheck, 60 * 60 * 1000);
 
     // Run once immediately
     runCheck();
@@ -87,13 +94,13 @@ export default function PostSection() {
     setAddingPost(true);
     try {
       const result = await handleAddPost(
-        newPostText, 
-        mediaFiles, 
-        isPermanent, 
-        uploadMediaFiles, 
+        newPostText,
+        mediaFiles,
+        isPermanent,
+        uploadMediaFiles,
         resetForm
       );
-      
+
       if (result.success) {
         resetForm();
       }
@@ -355,12 +362,24 @@ export default function PostSection() {
                       <button
                         onClick={() => handleSavePost(post.id)}
                         className={`flex items-center space-x-1 ${
-                          isSaved ? "text-green-500" : post.isPermanent ? "text-gray-500" : "text-gray-300"
-                        } hover:${post.isPermanent ? "text-green-600" : "text-gray-300"} transition ${
-                          post.isPermanent ? "cursor-pointer" : "cursor-not-allowed"
+                          isSaved
+                            ? "text-green-500"
+                            : post.isPermanent
+                            ? "text-gray-500"
+                            : "text-gray-300"
+                        } hover:${
+                          post.isPermanent ? "text-green-600" : "text-gray-300"
+                        } transition ${
+                          post.isPermanent
+                            ? "cursor-pointer"
+                            : "cursor-not-allowed"
                         }`}
                         disabled={!post.isPermanent && !isSaved}
-                        title={post.isPermanent ? "Save post" : "Only permanent posts can be saved"}
+                        title={
+                          post.isPermanent
+                            ? "Save post"
+                            : "Only permanent posts can be saved"
+                        }
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
