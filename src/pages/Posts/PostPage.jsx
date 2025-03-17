@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { auth } from "../../config/firebase.js";
 import { useMediaHandling } from "./MediaUtils.jsx";
 import { usePostHandlers } from "./PostHandlers.jsx";
+import { CommentsSection } from "./CommentsSection.jsx";
 
 export default function PostSection() {
   // State management
@@ -400,6 +401,7 @@ export default function PostSection() {
                     )}
                   </div>
 
+                  {/* Report Button */}
                   <div className="flex items-center">
                     {/* Only show report count to admins or for debugging */}
                     {/* <span className="text-xs text-gray-400 mr-2">Reports: {reportCount}/{REPORT_THRESHOLD}</span> */}
@@ -418,6 +420,9 @@ export default function PostSection() {
                     </button>
                   </div>
                 </div>
+                
+                {/* Comments Section */}
+                <CommentsSection postId={post.id} currentUser={currentUser} />
               </div>
             </div>
           );

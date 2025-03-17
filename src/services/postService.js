@@ -222,7 +222,7 @@ export const addPost = async (userId, postData) => {
 
     // Create post object
     const newPost = {
-      userid: userId,
+      uid: userId,
       description: postData.description,
       mediaUrls: postData.mediaUrls || [],
       isPermanent: postData.isPermanent || false,
