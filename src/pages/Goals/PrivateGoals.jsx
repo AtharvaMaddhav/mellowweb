@@ -54,45 +54,60 @@ const PrivateGoals = ({ goals = [], filters = null }) => {
       {filteredGoals.map((goal, index) => (
         <div 
           key={index}
-          className="bg-[#222] rounded-lg overflow-hidden border border-gray-800 hover:border-purple-500 transition-all duration-300"
+          className="bg-[#222] rounded-lg overflow-hidden border border-gray-800 hover:border-purple-500 transition-all duration-300 flex flex-col h-full"
         >
-          {/* Goal Image */}
-          <div className="h-40 bg-[#333] relative">
+          {/* Goal Image with aspect ratio container */}
+          <div className="relative w-full pt-[56.25%] bg-[#333]"> {/* 16:9 aspect ratio */}
             {goal.goalImage ? (
               <img 
                 src={goal.goalImage} 
                 alt={goal.title} 
-                className="w-full h-full object-cover"
+                className="absolute top-0 left-0 w-full h-full object-cover object-center" 
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900 to-gray-900">
-                <span className="text-white font-bold text-xl">{goal.title.charAt(0)}</span>
+              <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900 to-gray-900">
+                <span className="text-white font-bold text-3xl">{goal.title.charAt(0)}</span>
               </div>
             )}
             
             {/* Private Badge */}
-            <div className="absolute top-3 right-3 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
-              <Lock size={10} className="mr-1" />
+            <div className="absolute top-4 left-4 bg-gray-700 text-white text-sm font-medium px-3 py-1 rounded-md shadow-md flex items-center">
+              <Lock size={14} className="mr-1" />
               Private
             </div>
             
             {/* Completed Badge - Only shown if goal is completed */}
             {goal.completed && (
-              <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
+              <div className="absolute top-4 right-4 bg-green-500 text-white text-sm font-medium px-3 py-1 rounded-md shadow-md">
                 Completed
               </div>
             )}
           </div>
           
-          {/* Goal Content */}
-          <div className="p-4">
-            <h3 className="text-white font-bold text-lg mb-2">{goal.title}</h3>
-            <p className="text-gray-400 text-sm mb-4 line-clamp-2">{goal.description}</p>
+          {/* Goal Content - Improved spacing and sizing */}
+          <div className="p-6 flex-1 flex flex-col">
+            <h3 className="text-white font-bold text-xl mb-3 line-clamp-2">{goal.title}</h3>
+            <p className="text-gray-300 text-base mb-6 line-clamp-3">{goal.description}</p>
             
-            {/* Goal Meta Information */}
-            <div className="flex items-center text-xs text-gray-500 mt-2">
-              <Calendar size={12} className="mr-1" />
-              <span>{formatDate(goal.startDate)} - {formatDate(goal.endDate)}</span>
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+              <div 
+                className="bg-purple-600 h-2 rounded-full" 
+                style={{ width: `${goal.completed ? 100 : Math.floor(Math.random() * 80) + 10}%` }} 
+              />
+            </div>
+            
+            {/* Goal Meta Information with improved spacing and visibility */}
+            <div className="flex flex-col space-y-3 mt-auto">
+              <div className="flex items-center text-sm text-gray-400">
+                <Calendar size={16} className="mr-2 text-purple-400" />
+                <span>{formatDate(goal.startDate)} - {formatDate(goal.endDate)}</span>
+              </div>
+              
+              {/* Action button */}
+              <button className="mt-4 w-full bg-[#333] hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-300">
+                View Details
+              </button>
             </div>
           </div>
         </div>

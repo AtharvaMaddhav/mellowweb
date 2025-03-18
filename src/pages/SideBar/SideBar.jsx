@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Compass, Target, MessageCircle, Heart, Plus, User, MoreHorizontal } from 'lucide-react';
+import { Home, Search, Compass, Target, MessageCircle, Heart, Plus, User, MoreHorizontal, Users } from 'lucide-react';
 
 const Sidebar = () => {
   const navItems = [
@@ -12,9 +12,10 @@ const Sidebar = () => {
     { path: '/notifications', icon: <Heart size={40} />, text: 'Notifications' },
     { path: '/create', icon: <Plus size={40} />, text: 'Create' },
     { path: '/profile', icon: <User size={40} />, text: 'Profile' },
+    { path: '/community', icon: <Users size={40} />, text: 'Community' },
     { path: '/more', icon: <MoreHorizontal size={40} />, text: 'More' },
   ];
-
+  
   return (
     <div className="h-screen w-80 bg-black text-white p-6 flex flex-col">
       <h1 className="text-5xl font-bold mb-6">Mellow!</h1>

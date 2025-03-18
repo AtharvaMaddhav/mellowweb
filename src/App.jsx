@@ -11,6 +11,7 @@ import Chats from './pages/Chats/Chats.jsx';
 import Notifications from './pages/Notifications/Notifications.jsx';
 import Create from './pages/Create/Create.jsx';
 import Profile from './pages/Profile/Profile.jsx';
+import Community from './pages/Community/Community.jsx';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
       <Route path="/create" element={<Create />} />
       <Route path="/profile" element={<Profile />} /> 
       <Route path="/search" element={<Search />} />   
+      <Route path="/community" element={<Community />} />  
     </Routes>
   )
 }
