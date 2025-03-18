@@ -4,6 +4,8 @@ import { auth } from '../../config/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import SideBar from '../SideBar/SideBar';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { FaCalendarAlt } from 'react-icons/fa'; // Importing calendar icon
 
 const HomePage = () => {
   const [loading, setLoading] = useState(true);
@@ -13,13 +15,22 @@ const HomePage = () => {
   const [pastActivities, setPastActivities] = useState([]);
   const [completing, setCompleting] = useState(false);
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (!user) navigate('/auth');
     });
+
+    const fetchDailyActivity = async () => {
+      try {
+        await getDailyActivity();
+        console.log("Today's activity ensured.");
+      } catch (error) {
+        console.error("Error ensuring today's activity:", error);
+      }
+    };
 
     const fetchData = async () => {
       try {
@@ -85,7 +96,7 @@ const HomePage = () => {
     <div className="flex w-full min-h-screen bg-black text-white font-sans">
       <SideBar />
 
-      <div className="flex-1 p-8">
+      <div className="ml-75 flex-1 p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">Welcome to Mellow, {user.displayName || 'Guest'}!</h1>
           <button
@@ -133,9 +144,8 @@ const HomePage = () => {
                     <button
                       onClick={handleCompleteActivity}
                       disabled={completing}
-                      className={`w-40 px-4 py-2 rounded-md text-white font-medium ${
-                        completing ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
-                      }`}
+                      className={`w-40 px-4 py-2 rounded-md text-white font-medium ${completing ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
+                        }`}
                     >
                       {completing ? "Marking..." : "Complete"}
                     </button>
@@ -146,39 +156,63 @@ const HomePage = () => {
           )}
         </div>
 
-        {/* Fun Activities Section */}
-        <div className="bg-gray-900 rounded-xl p-6 mb-8 border border-gray-800 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">5 Fun Things To Do Today</h2>
-          <div className="space-y-4">
-            {funTasks.map((task, index) => (
-              <div key={task.id} className="flex items-start gap-4 border-b pb-3 text-white">
-                <span className="text-lg font-bold text-blue-400">{index + 1}.</span>
-                <div>
-                  <h3 className="text-lg font-medium">{task.title}</h3>
+        {/* Past Activities Section */}
+        <div className="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700 shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4 text-white">Past Activities</h2>
+
+          <div className="space-y-6">
+            {pastActivities.map((activity, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-4 bg-gray-700 p-4 rounded-lg"
+              >
+                {/* Activity Number */}
+                <span className="text-lg font-bold text-green-400">{index + 1}.</span>
+
+                {/* Activity Details */}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-300">{activity.title}</h3>
+                  <p className="text-gray-400 mt-2">{activity.description}</p>
+
+                  <span className="bg-blue-500 text-white text-sm font-medium px-3 py-1 rounded-full mt-2 inline-block">
+                    {activity.time}
+                  </span>
+                </div>
+
+                {/* Right-Aligned Date */}
+                <div className="text-right text-gray-400 opacity-70 min-w-[120px]">
+                  <FaCalendarAlt className="inline-block text-yellow-400 mr-2" />
+                  {format(new Date(activity.date), 'MMMM d, yyyy')}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Past Activities Section */}
-        <div className="bg-gray-900 rounded-xl p-6 mb-8 border border-gray-800 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">Past Activities</h2>
-          <div className="space-y-6">
-            {pastActivities.map((activity, index) => (
-              <div key={index} className="flex items-start gap-4 border-b pb-4">
-                <span className="text-lg font-bold text-green-400">{index + 1}.</span>
+        {/* Fun Activities Section */}
+        <div className="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700 shadow-lg">
+          <h2 className="text-2xl font-semibold text-white mb-4">🎉 5 Fun Things To Do Today</h2>
+
+          <div className="space-y-4">
+            {funTasks.map((task, index) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-4 border-b border-gray-600 pb-3 transition duration-300 hover:bg-gray-700 p-3 rounded-lg"
+              >
+                {/* Task Number with Animation */}
+                <span className="text-lg font-bold text-blue-400 transition-transform duration-300 transform hover:scale-110">
+                  {index + 1}.
+                </span>
+
+                {/* Task Title */}
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium">{activity.title}</h3>
-                  <p className="text-gray-400">{activity.description}</p>
-                  <span className="bg-blue-500 text-white text-sm font-medium px-3 py-1 rounded-full mt-2 inline-block">
-                    {activity.time}
-                  </span>
+                  <h3 className="text-lg font-medium text-gray-200">{task.title}</h3>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );

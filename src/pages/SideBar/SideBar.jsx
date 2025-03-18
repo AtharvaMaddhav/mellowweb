@@ -16,7 +16,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="h-screen w-80 bg-black text-white p-6 flex flex-col">
+    <div className="fixed top-0 left-0 h-screen w-75 bg-black text-white p-4 border-r border-gray-800 overflow-y-auto">
       <h1 className="text-5xl font-bold mb-6">Mellow!</h1>
       <div className="flex flex-col gap-5">
         {navItems.map((item) => (
