@@ -4,9 +4,9 @@ import { formatCommentTime } from "../../services/commentService.js";
 export const Comment = ({ 
   comment, 
   currentUser, 
-  replies = [], 
   onAddReply, 
-  onDeleteComment 
+  onDeleteComment,
+  onDeleteReply 
 }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -18,7 +18,7 @@ export const Comment = ({
     
     setIsSubmitting(true);
     try {
-      await onAddReply(comment.id, replyText);
+      await onAddReply(comment.commentId, replyText);
       setReplyText("");
       setShowReplyForm(false);
     } finally {
@@ -34,19 +34,19 @@ export const Comment = ({
       {/* Comment Header */}
       <div className="flex items-center">
         <div className="h-6 w-6 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center mr-2">
-          {comment.userData?.profilePic ? (
+          {comment.userProfile ? (
             <img
-              src={comment.userData.profilePic}
+              src={comment.userProfile}
               alt="Profile"
               className="h-full w-full object-cover"
             />
           ) : (
             <span className="text-gray-500 text-xs">
-              {comment.userData?.name?.charAt(0) || "U"}
+              {comment.userName?.charAt(0) || "U"}
             </span>
           )}
         </div>
-        <span className="font-medium text-sm">{comment.userData?.name || "Unknown User"}</span>
+        <span className="font-medium text-sm">{comment.userName || "Unknown User"}</span>
         <span className="text-xs text-gray-500 ml-2">
           {formatCommentTime(comment.createdAt)}
         </span>
@@ -54,7 +54,7 @@ export const Comment = ({
         {/* Delete option if author */}
         {isAuthor && (
           <button 
-            onClick={() => onDeleteComment(comment.id)} 
+            onClick={() => onDeleteComment(comment.commentId)} 
             className="ml-auto text-xs text-gray-400 hover:text-red-500"
             title="Delete comment"
           >
@@ -67,11 +67,11 @@ export const Comment = ({
       
       {/* Comment Content */}
       <div className="mt-1 mb-2">
-        <p className="text-sm text-gray-800">{comment.text}</p>
+        <p className="text-sm text-gray-800">{comment.commentText}</p>
       </div>
       
       {/* Reply Button */}
-      {currentUser && !comment.parentId && (
+      {currentUser && (
         <button 
           onClick={() => setShowReplyForm(!showReplyForm)}
           className="text-xs text-gray-500 hover:text-blue-500 mb-2"
@@ -103,25 +103,25 @@ export const Comment = ({
       )}
       
       {/* Replies */}
-      {replies.length > 0 && (
+      {comment.replies && comment.replies.length > 0 && (
         <div className="ml-4 mt-2">
-          {replies.map(reply => (
-            <div key={reply.id} className="border-l-2 border-gray-100 pl-2 my-2">
+          {comment.replies.map(reply => (
+            <div key={reply.replyId} className="border-l-2 border-gray-100 pl-2 my-2">
               <div className="flex items-center">
                 <div className="h-5 w-5 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center mr-2">
-                  {reply.userData?.profilePic ? (
+                  {reply.userProfile ? (
                     <img
-                      src={reply.userData.profilePic}
+                      src={reply.userProfile}
                       alt="Profile"
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <span className="text-gray-500 text-xs">
-                      {reply.userData?.name?.charAt(0) || "U"}
+                      {reply.userName?.charAt(0) || "U"}
                     </span>
                   )}
                 </div>
-                <span className="font-medium text-xs">{reply.userData?.name || "Unknown User"}</span>
+                <span className="font-medium text-xs">{reply.userName || "Unknown User"}</span>
                 <span className="text-xs text-gray-500 ml-2">
                   {formatCommentTime(reply.createdAt)}
                 </span>
@@ -129,7 +129,7 @@ export const Comment = ({
                 {/* Delete option if author */}
                 {currentUser && currentUser.uid === reply.uid && (
                   <button 
-                    onClick={() => onDeleteComment(reply.id)} 
+                    onClick={() => onDeleteReply(comment.commentId, reply.replyId)} 
                     className="ml-auto text-xs text-gray-400 hover:text-red-500"
                     title="Delete reply"
                   >
@@ -139,7 +139,7 @@ export const Comment = ({
                   </button>
                 )}
               </div>
-              <p className="text-xs text-gray-800 mt-1">{reply.text}</p>
+              <p className="text-xs text-gray-800 mt-1">{reply.replyText}</p>
             </div>
           ))}
         </div>

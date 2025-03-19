@@ -109,9 +109,9 @@ export const checkReportThreshold = (post, threshold = 3) => {
 };
 
 // Get user data for a post
-export const fetchUserData = async (userId) => {
+export const fetchUserData = async (uid) => {
   try {
-    const userDoc = await getDoc(doc(db, "users", userId));
+    const userDoc = await getDoc(doc(db, "users", uid));
     return userDoc.exists() ? userDoc.data() : null;
   } catch (error) {
     console.error("Error fetching user data:", error.message);
@@ -120,7 +120,7 @@ export const fetchUserData = async (userId) => {
 };
 
 // Toggle like on a post
-export const toggleLike = async (postId, userId) => {
+export const toggleLike = async (postId, uid) => {
   try {
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
@@ -129,11 +129,11 @@ export const toggleLike = async (postId, userId) => {
       return false;
     }
 
-    const isLiked = postSnap.data().likes?.includes(userId);
+    const isLiked = postSnap.data().likes?.includes(uid);
 
     // Add or remove like based on current state
     await updateDoc(postRef, {
-      likes: isLiked ? arrayRemove(userId) : arrayUnion(userId),
+      likes: isLiked ? arrayRemove(uid) : arrayUnion(uid),
     });
 
     return true;
@@ -144,7 +144,7 @@ export const toggleLike = async (postId, userId) => {
 };
 
 // Report a post
-export const reportPost = async (postId, userId) => {
+export const reportPost = async (postId, uid) => {
   try {
     const postRef = doc(db, "posts", postId);
 
@@ -158,7 +158,7 @@ export const reportPost = async (postId, userId) => {
 
     // Update document with new report
     await updateDoc(postRef, {
-      reports: arrayUnion(userId),
+      reports: arrayUnion(uid),
     });
 
     // Check if this report pushes it over threshold
@@ -177,10 +177,10 @@ export const reportPost = async (postId, userId) => {
 };
 
 // Save a post to user's saved posts collection
-export const savePost = async (postId, userId) => {
+export const savePost = async (postId, uid) => {
   try {
     // Add postId to user's savedPosts array
-    const userRef = doc(db, "users", userId);
+    const userRef = doc(db, "users", uid);
 
     // Use arrayUnion to add the postId to the savedPosts array
     await updateDoc(userRef, {
@@ -195,10 +195,10 @@ export const savePost = async (postId, userId) => {
 };
 
 // // Remove a post from user's saved posts collection
-export const unsavePost = async (postId, userId) => {
+export const unsavePost = async (postId, uid) => {
   try {
     // Remove postId from user's savedPosts array
-    const userRef = doc(db, "users", userId);
+    const userRef = doc(db, "users", uid);
 
     // Use arrayRemove to remove the postId from the savedPosts array
     await updateDoc(userRef, {
@@ -213,7 +213,7 @@ export const unsavePost = async (postId, userId) => {
 };
 
 // Add a new post
-export const addPost = async (userId, postData) => {
+export const addPost = async (uid, postData) => {
   try {
     // Calculate expiration time if not permanent (24 hours from now)
     const expiresAt = postData.isPermanent
@@ -222,7 +222,7 @@ export const addPost = async (userId, postData) => {
 
     // Create post object
     const newPost = {
-      uid: userId,
+      uid: uid,
       description: postData.description,
       mediaUrls: postData.mediaUrls || [],
       isPermanent: postData.isPermanent || false,

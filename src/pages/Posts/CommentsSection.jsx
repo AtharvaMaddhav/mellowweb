@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Comment } from "./Comment.jsx";
-import { getComments, addComment, addReply, deleteComment } from "../../services/commentService.js";
+import { 
+  getComments, 
+  addComment, 
+  addReply, 
+  deleteComment, 
+  deleteReply 
+} from "../../services/commentService.js";
 
 export const CommentsSection = ({ postId, currentUser }) => {
   const [comments, setComments] = useState([]);
@@ -39,11 +45,11 @@ export const CommentsSection = ({ postId, currentUser }) => {
     setIsSubmitting(true);
     try {
       const userData = {
-        name: currentUser.displayName || "Anonymous",
-        profilePic: currentUser.photoURL || null
+        name: currentUser.name || "Anonymous",
+        profilePic: currentUser.profilePic || null
       };
       
-      await addComment(postId, currentUser.uid, newComment, userData);
+      await addComment(postId, currentUser.uid, newComment);
       setNewComment("");
       loadComments(); // Reload comments
     } catch (error) {
@@ -54,16 +60,16 @@ export const CommentsSection = ({ postId, currentUser }) => {
   };
   
   // Handle adding a reply to a comment
-  const handleAddReply = async (parentId, text) => {
+  const handleAddReply = async (commentId, text) => {
     if (!text.trim() || !currentUser) return;
     
     try {
       const userData = {
-        name: currentUser.displayName || "Anonymous",
-        profilePic: currentUser.photoURL || null
+        name: currentUser.name || "Anonymous",
+        profilePic: currentUser.profilePic || null
       };
       
-      await addReply(postId, currentUser.uid, text, userData, parentId);
+      await addReply(postId, commentId, currentUser.uid, text);
       loadComments(); // Reload comments
     } catch (error) {
       console.error("Error adding reply:", error);
@@ -73,20 +79,21 @@ export const CommentsSection = ({ postId, currentUser }) => {
   // Handle deleting a comment
   const handleDeleteComment = async (commentId) => {
     try {
-      await deleteComment(postId, commentId);  // Now passing postId as well
+      await deleteComment(postId, commentId);
       loadComments(); // Reload comments
     } catch (error) {
       console.error("Error deleting comment:", error);
     }
   };
   
-  // Separate top-level comments and replies
-  const topLevelComments = comments.filter(comment => !comment.parentId);
-  const replies = comments.filter(comment => comment.parentId);
-  
-  // Get replies for a specific comment
-  const getRepliesForComment = (commentId) => {
-    return replies.filter(reply => reply.parentId === commentId);
+  // Handle deleting a reply
+  const handleDeleteReply = async (commentId, replyId) => {
+    try {
+      await deleteReply(postId, commentId, replyId); 
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error("Error deleting reply:", error);
+    }
   };
   
   return (
@@ -146,18 +153,18 @@ export const CommentsSection = ({ postId, currentUser }) => {
           )}
           
           {/* Comments List */}
-          {!loading && topLevelComments.length === 0 && (
+          {!loading && comments.length === 0 && (
             <p className="text-sm text-gray-500 my-3">No comments yet</p>
           )}
           
-          {!loading && topLevelComments.map(comment => (
+          {!loading && comments.map(comment => (
             <Comment
-              key={comment.id}
+              key={comment.commentId}
               comment={comment}
               currentUser={currentUser}
-              replies={getRepliesForComment(comment.id)}
               onAddReply={handleAddReply}
               onDeleteComment={handleDeleteComment}
+              onDeleteReply={handleDeleteReply}
             />
           ))}
         </div>
