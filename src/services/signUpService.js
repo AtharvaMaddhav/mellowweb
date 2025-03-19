@@ -13,13 +13,14 @@ const saveUserToFirestore = async (user, name = "User", authType = "email_signup
     uid: user.uid,
     name,
     email: user.email,
-    profilePic: "",
+    profilePic: user.photoURL || "",
     authType,
-    followers: [],
-    following: [],
-    isOnline: true,
+    bio: "Hey there! I am using this app.",
     createdAt: serverTimestamp(),
     lastSeen: serverTimestamp(),
+    isOnline: true,
+    followers: [],
+    following: [],
   };
 
   try {
