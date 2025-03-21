@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth } from "../../config/firebase";
-import { db, storage } from "../../config/firebase"; // Added storage import
+import { db} from "../../config/firebase"; // Added storage import
 import { X, ImagePlus, Users } from 'lucide-react'; // Added Lucide icons
 
 const CreateCommunity = ({ onCreateCommunity, onCancel }) => {

@@ -170,7 +170,7 @@ export const usePostHandlers = (currentUser, setPosts, posts) => {
           mediaUrls: mediaUploads,
           isPermanent,
           expiresAt,
-          userid: currentUser.uid,
+          uid: currentUser.uid,
           likes: [],
           reports: [],
           createdAt: {
@@ -278,7 +278,7 @@ export const usePostHandlers = (currentUser, setPosts, posts) => {
       // Add user data to each post and check if it's saved by current user
       const postsWithUserData = await Promise.all(
         newPosts.map(async (post) => {
-          const userData = await fetchUserData(post.userid);
+          const userData = await fetchUserData(post.uid);
           return {
             ...post,
             userData,
@@ -323,7 +323,7 @@ export const usePostHandlers = (currentUser, setPosts, posts) => {
       // Add user data to each post and check if it's saved by current user
       const postsWithUserData = await Promise.all(
         newPosts.map(async (post) => {
-          const userData = await fetchUserData(post.userid);
+          const userData = await fetchUserData(post.uid);
           return {
             ...post,
             userData,
