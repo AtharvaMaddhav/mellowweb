@@ -6,11 +6,11 @@ const Sidebar = () => {
   const navItems = [
     { path: '/', icon: <Home size={40} />, text: 'Home' },
     { path: '/search', icon: <Search size={40} />, text: 'Search' },
-    { path: '/explore', icon: <Compass size={40} />, text: 'Explore' },
+    { path: '/about', icon: <Compass size={40} />, text: 'About us' },
     { path: '/goal', icon: <Target size={40} />, text: 'Daily Goals' },
     { path: '/chat', icon: <MessageCircle size={40} />, text: 'Chat' },
     { path: '/notifications', icon: <Heart size={40} />, text: 'Notifications' },
-    { path: '/create', icon: <Plus size={40} />, text: 'Create' },
+    { path: '/post', icon: <Plus size={40} />, text: 'Post' },
     { path: '/profile', icon: <User size={40} />, text: 'Profile' },
     { path: '/community', icon: <Users size={40} />, text: 'Community' },
     { path: '/more', icon: <MoreHorizontal size={40} />, text: 'More' },
