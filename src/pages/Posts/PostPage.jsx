@@ -4,6 +4,7 @@ import { useMediaHandling } from "./MediaUtils.jsx";
 import { usePostHandlers } from "./PostHandlers.jsx";
 import { CommentsSection } from "./CommentsSection.jsx";
 import { ViewOtherProfile } from "../Profile/ViewOtherProfile.jsx";
+import SideBar from '../SideBar/SideBar.jsx';
 
 export default function PostSection() {
   // State management
@@ -148,6 +149,7 @@ export default function PostSection() {
 
   return (
     <div className="max-w-xl mx-auto p-4 bg-gray-50 min-h-screen">
+      <SideBar />
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Feed</h1>

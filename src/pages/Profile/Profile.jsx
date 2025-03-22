@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { profileService } from "../../services/profileService.js";
 import { EditProfile } from "./EditProfile.jsx";
+import SideBar from '../SideBar/SideBar.jsx';
 
 const Profile = () => {
   const { userId } = useParams();
@@ -405,6 +406,7 @@ const Profile = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 bg-gray-900 min-h-screen text-gray-200">
+      <SideBar />
       {/* Header with gradient */}
       <div className="h-32 bg-gradient-to-r from-indigo-900 to-purple-900 rounded-t-lg mb-16 relative"></div>
 
