@@ -110,7 +110,7 @@ export const EditProfile = ({ profileData, onClose, onSave }) => {
           <h2 className="text-lg font-semibold">Edit Profile</h2>
           <button
             onClick={onClose}
-            className="text-2xl text-gray-400 hover:text-white focus:outline-none flex items-center justify-center w-8 h-8"
+            className="cursor-pointer text-2xl text-gray-400 hover:text-white focus:outline-none flex items-center justify-center w-8 h-8"
           >
             ×
           </button>
@@ -157,7 +157,7 @@ export const EditProfile = ({ profileData, onClose, onSave }) => {
                 <button
                   type="button"
                   onClick={triggerFileInput}
-                  className="block px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200 hover:bg-gray-600 focus:outline-none"
+                  className="cursor-pointer block px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200 hover:bg-gray-600 focus:outline-none"
                 >
                   Upload Photo
                 </button>
@@ -165,7 +165,7 @@ export const EditProfile = ({ profileData, onClose, onSave }) => {
                   <button
                     type="button"
                     onClick={removePhoto}
-                    className="block px-3 py-1.5 border border-gray-600 rounded text-sm text-gray-400 hover:text-red-400 hover:border-red-400 focus:outline-none"
+                    className="cursor-pointer block px-3 py-1.5 border border-gray-600 rounded text-sm text-gray-400 hover:text-red-400 hover:border-red-400 focus:outline-none"
                   >
                     Remove
                   </button>
@@ -216,14 +216,14 @@ export const EditProfile = ({ profileData, onClose, onSave }) => {
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 mr-2 border border-gray-600 rounded text-sm font-semibold text-gray-200 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="cursor-pointer px-4 py-2 mr-2 border border-gray-600 rounded text-sm font-semibold text-gray-200 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || uploadingPhoto}
-              className="px-4 py-2 bg-blue-500 rounded text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="cursor-pointer px-4 py-2 bg-blue-500 rounded text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting
                 ? "Saving..."

@@ -411,7 +411,7 @@ const Profile = () => {
       <div className="relative -mt-24 mb-10">
         {/* Profile Picture Section */}
         <div className="flex flex-col items-center">
-          <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 cursor-pointer shadow-lg mb-4">
+          <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg mb-4">
             <img
               src={profileData.profilePic || "/default-profile.png"}
               alt={`${profileData.name}'s profile`}
@@ -450,7 +450,7 @@ const Profile = () => {
           {isCurrentUserProfile && (
             <button
               onClick={handleEditProfileClick}
-              className="px-6 py-2 bg-indigo-600 rounded-full text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+              className="px-6 py-2 bg-indigo-600 rounded-full text-sm font-semibold cursor-pointer text-white hover:bg-indigo-700 transition-colors"
             >
               Edit Profile
             </button>
@@ -487,7 +487,7 @@ const Profile = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-6">
           <button
             onClick={() => setActiveSection("posts")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors ${
+            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
               activeSection === "posts"
                 ? "bg-indigo-800 bg-opacity-50"
                 : "bg-gray-700 hover:bg-gray-600"
@@ -514,7 +514,7 @@ const Profile = () => {
 
           <button
             onClick={() => setActiveSection("liked")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors ${
+            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
               activeSection === "liked"
                 ? "bg-pink-800 bg-opacity-50"
                 : "bg-gray-700 hover:bg-gray-600"
@@ -541,7 +541,7 @@ const Profile = () => {
 
           <button
             onClick={() => setActiveSection("saved")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors ${
+            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
               activeSection === "saved"
                 ? "bg-purple-800 bg-opacity-50"
                 : "bg-gray-700 hover:bg-gray-600"
@@ -568,7 +568,7 @@ const Profile = () => {
 
           <button
             onClick={() => setActiveSection("goals")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors ${
+            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
               activeSection === "goals"
                 ? "bg-green-800 bg-opacity-50"
                 : "bg-gray-700 hover:bg-gray-600"

@@ -3,6 +3,7 @@ import { auth } from "../../config/firebase.js";
 import { useMediaHandling } from "./MediaUtils.jsx";
 import { usePostHandlers } from "./PostHandlers.jsx";
 import { CommentsSection } from "./CommentsSection.jsx";
+import { ViewOtherProfile } from "../Profile/ViewOtherProfile.jsx";
 
 export default function PostSection() {
   // State management
@@ -11,6 +12,9 @@ export default function PostSection() {
   const [lastVisible, setLastVisible] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // Add state to track the profile being viewed
+  const [viewingProfileId, setViewingProfileId] = useState(null);
 
   // Post creation state
   const [showAddPost, setShowAddPost] = useState(false);
@@ -116,6 +120,16 @@ export default function PostSection() {
     resetMediaState();
     setIsPermanent(false);
     setShowAddPost(false);
+  };
+
+  // Handle opening a user profile
+  const handleOpenProfile = (userId) => {
+    setViewingProfileId(userId);
+  };
+
+  // Handle closing the profile view
+  const handleCloseProfile = () => {
+    setViewingProfileId(null);
   };
 
   // Set up intersection observer for infinite scrolling
@@ -292,7 +306,10 @@ export default function PostSection() {
               {/* Post Header */}
               <div className="flex items-center p-4 border-b">
                 {/* User Avatar */}
-                <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                <div 
+                  className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center cursor-pointer"
+                  onClick={() => post.uid && handleOpenProfile(post.uid)}
+                >
                   {post.userData?.profilePic ? (
                     <img
                       src={post.userData.profilePic}
@@ -306,9 +323,12 @@ export default function PostSection() {
                   )}
                 </div>
 
-                {/* User Info */}
+                {/* User Info - Make the name clickable */}
                 <div className="ml-3 flex-grow">
-                  <p className="font-medium text-gray-800">
+                  <p 
+                    className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 transition"
+                    onClick={() => post.uid && handleOpenProfile(post.uid)}
+                  >
                     {post.userData?.name || "Unknown User"}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -467,6 +487,14 @@ export default function PostSection() {
 
       {/* Media Viewer Modal */}
       <MediaViewerModal />
+
+      {/* Profile Viewer Modal */}
+      {viewingProfileId && (
+        <ViewOtherProfile 
+          userId={viewingProfileId} 
+          onClose={handleCloseProfile} 
+        />
+      )}
     </div>
   );
 }
