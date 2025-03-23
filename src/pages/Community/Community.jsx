@@ -1,16 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Trophy, BookOpen, Compass, Heart, Dumbbell, Brain, Filter } from "lucide-react";
+import { Users, Plus, Trophy, BookOpen, Heart, Dumbbell, Brain, Filter, Compass } from "lucide-react";
 import SideBar from "../SideBar/SideBar.jsx";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../config/firebase";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { db, auth } from "../../config/firebase";
 import CreateCommunity from "./CreateCommunity.jsx";
+import CommunityDetails from "./CommunityDetails.jsx";
 
 const Community = () => {
   const [isCreatingCommunity, setIsCreateModalOpen] = useState(false);
-  const [recommendedCommunities, setRecommendedCommunities] = useState([]);
+  const [communities, setCommunities] = useState([]);
+  const [trendingCommunities, setTrendingCommunities] = useState([]);
+  const [userCommunities, setUserCommunities] = useState([]);
+  const [suggestedCommunities, setSuggestedCommunities] = useState([]);
+  const [mostPopularCommunity, setMostPopularCommunity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("myCommunities");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
+  const [viewingDetails, setViewingDetails] = useState(false);
+  
+  // Set current user ID
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setCurrentUserId(user.uid);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
   
   // Fetch communities from database
   useEffect(() => {
@@ -19,7 +38,7 @@ const Community = () => {
         setLoading(true);
         const querySnapshot = await getDocs(collection(db, "Communities"));
         
-        const communities = querySnapshot.docs.map((doc) => {
+        const communitiesData = querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -27,13 +46,39 @@ const Community = () => {
             description: data.description,
             tagline: data.tagline,
             image: data.image,
+            members: data.members || [],
             membersCount: data.members ? data.members.length : 0,
-            category: data.category
+            category: data.category,
+            createdBy: data.createdBy,
+            timestamp: data.timestamp
           };
         });
         
-        setRecommendedCommunities(communities);
-        console.log("Fetched communities:", communities);
+        // Sort by member count to get trending communities
+        const sorted = [...communitiesData].sort((a, b) => b.membersCount - a.membersCount);
+        setCommunities(communitiesData);
+        
+        // Set top 5 trending communities
+        setTrendingCommunities(sorted.slice(0, 5));
+        
+        // Set most popular community (for featured section)
+        if (sorted.length > 0) {
+          setMostPopularCommunity(sorted[0]);
+        }
+        
+        // Filter user's communities if user is logged in
+        if (currentUserId) {
+          const userComms = communitiesData.filter(comm => 
+            comm.members && comm.members.includes(currentUserId)
+          );
+          setUserCommunities(userComms);
+          
+          // Get suggested communities (trending that user hasn't joined)
+          const suggested = sorted.filter(comm => 
+            !comm.members || !comm.members.includes(currentUserId)
+          ).slice(0, 5);
+          setSuggestedCommunities(suggested);
+        }
       } catch (err) {
         console.error("Error fetching communities:", err);
         setError(err.message);
@@ -43,18 +88,84 @@ const Community = () => {
     };
   
     fetchCommunities();
-  }, []);
+  }, [currentUserId]);
+  
+  // Handle viewing community details
+  const handleViewCommunity = (community) => {
+    setSelectedCommunity(community);
+    setViewingDetails(true);
+  };
+  
+  // Handle returning from community details
+  const handleBackFromDetails = () => {
+    setViewingDetails(false);
+    setSelectedCommunity(null);
+    
+    // Refetch communities to get updated data
+    const fetchCommunities = async () => {
+      try {
+        setLoading(true);
+        const querySnapshot = await getDocs(collection(db, "Communities"));
+        
+        const communitiesData = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name,
+            description: data.description,
+            tagline: data.tagline,
+            image: data.image,
+            members: data.members || [],
+            membersCount: data.members ? data.members.length : 0,
+            category: data.category,
+            createdBy: data.createdBy,
+            timestamp: data.timestamp
+          };
+        });
+        
+        // Sort by member count to get trending communities
+        const sorted = [...communitiesData].sort((a, b) => b.membersCount - a.membersCount);
+        setCommunities(communitiesData);
+        
+        // Set top 5 trending communities
+        setTrendingCommunities(sorted.slice(0, 5));
+        
+        // Set most popular community (for featured section)
+        if (sorted.length > 0) {
+          setMostPopularCommunity(sorted[0]);
+        }
+        
+        // Filter user's communities if user is logged in
+        if (currentUserId) {
+          const userComms = communitiesData.filter(comm => 
+            comm.members && comm.members.includes(currentUserId)
+          );
+          setUserCommunities(userComms);
+          
+          // Get suggested communities (trending that user hasn't joined)
+          const suggested = sorted.filter(comm => 
+            !comm.members || !comm.members.includes(currentUserId)
+          ).slice(0, 5);
+          setSuggestedCommunities(suggested);
+        }
+      } catch (err) {
+        console.error("Error fetching communities:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchCommunities();
+  };
   
   if (isCreatingCommunity) {
-    return <CreateCommunity />;
-  } 
-  // Trending categories
-  const trendingCategories = [
-    { name: "Fitness", icon: <Dumbbell size={16} /> },
-    { name: "Reading", icon: <BookOpen size={16} /> },
-    { name: "Wellness", icon: <Heart size={16} /> },
-    { name: "Education", icon: <Brain size={16} /> }
-  ];
+    return <CreateCommunity onComplete={() => setIsCreateModalOpen(false)} />;
+  }
+  
+  if (viewingDetails && selectedCommunity) {
+    return <CommunityDetails community={selectedCommunity} onBack={handleBackFromDetails} />;
+  }
 
   // Render loading state
   const renderLoading = () => (
@@ -92,39 +203,109 @@ const Community = () => {
   );
 
   // Community card component
-  const CommunityCard = ({ community }) => (
-    <div className="bg-[#252525] rounded-xl p-5 hover:bg-[#2A2A2A] transition-all border border-gray-700 hover:border-purple-500 shadow-lg cursor-pointer">
-      <div className="flex gap-4 items-center mb-3">
-        <div className="flex-shrink-0">
-          <img 
-            src={community.image || "/api/placeholder/80/80"} 
-            alt={community.name} 
-            className="w-16 h-16 rounded-lg object-cover border border-gray-700"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "/api/placeholder/80/80";
-            }}
-          />
+  const CommunityCard = ({ community }) => {
+    const isUserMember = community.members && community.members.includes(currentUserId);
+    
+    return (
+      <div 
+        onClick={() => handleViewCommunity(community)}
+        className="bg-[#252525] rounded-xl p-5 hover:bg-[#2A2A2A] transition-all border border-gray-700 hover:border-purple-500 shadow-lg cursor-pointer"
+      >
+        <div className="flex gap-4 items-center mb-3">
+          <div className="flex-shrink-0">
+            <img 
+              src={community.image || "/api/placeholder/80/80"} 
+              alt={community.name} 
+              className="w-16 h-16 rounded-lg object-cover border border-gray-700"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "/api/placeholder/80/80";
+              }}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-lg text-white truncate">{community.name}</h3>
+            <p className="text-gray-300 text-sm truncate">{community.tagline}</p>
+            <div className="flex items-center gap-1 text-gray-400 text-xs mt-1">
+              <Users size={12} />
+              <span>{community.membersCount.toLocaleString()} members</span>
+            </div>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-lg text-white truncate">{community.name}</h3>
-          <p className="text-gray-300 text-sm truncate">{community.tagline}</p>
-          <div className="flex items-center gap-1 text-gray-400 text-xs mt-1">
-            <Users size={12} />
-            <span>{community.members?.toLocaleString() || "0"} members</span>
+        <div className="flex justify-between items-center mt-4">
+          <span className="text-xs px-2 py-1 bg-purple-900/30 rounded-md text-purple-300">
+            {community.category || "General"}
+          </span>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card click event
+              handleViewCommunity(community);
+            }}
+            className={`text-xs px-4 py-1.5 rounded-md text-white font-semibold transition-all ${
+              isUserMember 
+                ? "bg-gray-600 hover:bg-gray-700" 
+                : "bg-purple-600 hover:bg-purple-700"
+            }`}
+          >
+            {isUserMember ? "View" : "Join"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Detailed community card for featured section
+  const DetailedCommunityCard = ({ community }) => {
+    if (!community) return null;
+    
+    const isUserMember = community.members && community.members.includes(currentUserId);
+    
+    return (
+      <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-gray-800 shadow-lg">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="max-w-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <Trophy size={16} className="text-yellow-500" />
+              <span className="text-xs uppercase tracking-wider text-yellow-400 font-semibold">Most Popular</span>
+            </div>
+            <h3 className="text-xl font-bold mb-2 text-white">{community.name}</h3>
+            <p className="text-gray-300 mb-4">{community.description}</p>
+            <div className="flex items-center gap-4 text-sm text-gray-400 mb-6">
+              <div className="flex items-center gap-1">
+                <Users size={14} />
+                <span>{community.membersCount.toLocaleString()} members</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Trophy size={14} />
+                <span>{community.tagline}</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => handleViewCommunity(community)}
+              className={`px-5 py-2.5 rounded-lg text-white flex items-center gap-2 transition-all shadow-md ${
+                isUserMember 
+                  ? "bg-gray-600 hover:bg-gray-700" 
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {isUserMember ? "View Community" : "Join Now"}
+            </button>
+          </div>
+          <div className="flex-shrink-0">
+            <img 
+              src={community.image || "/api/placeholder/240/180"} 
+              alt={community.name} 
+              className="w-64 h-48 rounded-lg shadow-lg border border-gray-700 object-cover"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "/api/placeholder/240/180";
+              }}
+            />
           </div>
         </div>
       </div>
-      <div className="flex justify-between items-center mt-4">
-        <span className="text-xs px-2 py-1 bg-purple-900/30 rounded-md text-purple-300">
-          {community.category || "General"}
-        </span>
-        <button className="text-xs bg-purple-600 hover:bg-purple-700 px-4 py-1.5 rounded-md text-white font-semibold transition-all">
-          Join
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="flex h-screen bg-black text-white">
@@ -164,24 +345,42 @@ const Community = () => {
           </div>
         </div>
 
-        {/* Trending Categories Slider */}
+        {/* Trending Communities Slider - Updated to fix scrollbar issue */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4 text-white flex items-center gap-2">
             <Trophy size={18} className="text-yellow-500" />
-            Trending Categories
+            Trending Communities
           </h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-            {trendingCategories.map((category, index) => (
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {loading ? (
+              Array(5).fill(0).map((_, index) => (
+                <div key={index} className="flex-shrink-0 bg-[#222] animate-pulse p-5 rounded-xl w-64 h-32"></div>
+              ))
+            ) : trendingCommunities.map((community, index) => (
               <div 
-                key={index} 
-                className="flex-shrink-0 bg-gradient-to-br from-purple-600 to-blue-600 p-5 rounded-xl w-48 h-32 flex flex-col justify-between hover:scale-105 transition-transform cursor-pointer shadow-xl"
+                key={community.id} 
+                onClick={() => handleViewCommunity(community)}
+                className="flex-shrink-0 bg-gradient-to-br from-purple-600 to-blue-600 p-5 rounded-xl w-64 h-32 flex flex-col justify-between hover:scale-105 transition-transform cursor-pointer shadow-xl"
               >
-                <div className="bg-white/20 w-10 h-10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                  {category.icon}
+                <div className="flex justify-between items-start">
+                  <div className="bg-white/20 w-10 h-10 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <img 
+                      src={community.image || "/api/placeholder/40/40"} 
+                      alt={community.name}
+                      className="w-8 h-8 rounded-md object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/api/placeholder/40/40";
+                      }}
+                    />
+                  </div>
+                  <div className="bg-white/10 px-2 py-1 rounded-md backdrop-blur-sm">
+                    <p className="text-xs text-white font-medium">#{index + 1}</p>
+                  </div>
                 </div>
                 <div>
-                  <p className="font-semibold text-white">{category.name}</p>
-                  <p className="text-xs text-gray-200">{Math.floor(Math.random() * 100) + 20} communities</p>
+                  <p className="font-semibold text-white truncate">{community.name}</p>
+                  <p className="text-xs text-gray-200">{community.membersCount.toLocaleString()} members</p>
                 </div>
               </div>
             ))}
@@ -192,24 +391,19 @@ const Community = () => {
         <div className="bg-[#111] rounded-xl p-6 mb-8 shadow-xl border border-gray-800">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
-              <Trophy size={18} className="text-yellow-500" />
+              <Compass size={18} className="text-purple-400" />
               <h2 className="text-2xl font-bold text-white">Community Explorer</h2>
             </div>
             <div className="flex gap-2">
               <FilterButton 
-                label="All" 
-                icon={<Filter size={14} />} 
-                filter="all" 
-              />
-              <FilterButton 
-                label="Newest" 
-                icon={<BookOpen size={14} />} 
-                filter="newest" 
-              />
-              <FilterButton 
-                label="Popular" 
+                label="My Communities" 
                 icon={<Users size={14} />} 
-                filter="popular" 
+                filter="myCommunities" 
+              />
+              <FilterButton 
+                label="Suggested For You" 
+                icon={<Compass size={14} />} 
+                filter="suggested" 
               />
             </div>
           </div>
@@ -217,53 +411,44 @@ const Community = () => {
           {/* Communities Grid */}
           {loading ? renderLoading() : error ? renderError() : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recommendedCommunities.length > 0 ? recommendedCommunities.map((community) => (
-                <CommunityCard key={community.id} community={community} />
-              )) : (
-                <div className="col-span-3 text-center p-10 text-gray-400">
-                  <p>No communities found. Try again later.</p>
-                </div>
+              {activeFilter === "myCommunities" ? (
+                userCommunities.length > 0 ? (
+                  userCommunities.map((community) => (
+                    <CommunityCard key={community.id} community={community} />
+                  ))
+                ) : (
+                  <div className="col-span-3 text-center p-10 text-gray-400">
+                    <p>You haven't joined any communities yet. Explore our suggestions!</p>
+                  </div>
+                )
+              ) : (
+                suggestedCommunities.length > 0 ? (
+                  suggestedCommunities.map((community) => (
+                    <CommunityCard key={community.id} community={community} />
+                  ))
+                ) : (
+                  <div className="col-span-3 text-center p-10 text-gray-400">
+                    <p>No suggested communities available right now.</p>
+                  </div>
+                )
               )}
             </div>
           )}
           
-          {/* Featured Community */}
+          {/* Featured Community - Most Popular */}
           <div className="mt-10">
             <div className="flex items-center gap-2 mb-6">
               <Trophy size={18} className="text-yellow-500" />
               <h2 className="text-2xl font-bold text-white">Featured Community</h2>
             </div>
             
-            {recommendedCommunities.length > 0 && (
-              <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-gray-800 shadow-lg">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="max-w-lg">
-                    <h3 className="text-xl font-bold mb-2 text-white">
-                      {recommendedCommunities[0]?.name || "Community Spotlight"}
-                    </h3>
-                    <p className="text-gray-300 mb-4">
-                      {recommendedCommunities[0]?.description || "Join our featured community to connect with others who share your interests and passions."}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-                      <Users size={14} />
-                      <span>{recommendedCommunities[0]?.members?.toLocaleString() || "0"} members</span>
-                    </div>
-                    <button className="bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-lg text-white flex items-center gap-2 transition-all shadow-md">
-                      Join Now
-                    </button>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <img 
-                      src={recommendedCommunities[0]?.image || "/api/placeholder/240/180"} 
-                      alt={recommendedCommunities[0]?.name || "Featured Community"} 
-                      className="w-64 h-48 rounded-lg shadow-lg border border-gray-700 object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "/api/placeholder/240/180";
-                      }}
-                    />
-                  </div>
-                </div>
+            {loading ? (
+              <div className="bg-[#222] animate-pulse p-6 rounded-xl h-48"></div>
+            ) : mostPopularCommunity ? (
+              <DetailedCommunityCard community={mostPopularCommunity} />
+            ) : (
+              <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-gray-800 text-center">
+                <p className="text-gray-400">No communities available at the moment.</p>
               </div>
             )}
           </div>
@@ -272,5 +457,21 @@ const Community = () => {
     </div>
   );
 };
+
+// Add CSS to hide scrollbars globally
+const style = document.createElement('style');
+style.textContent = `
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+`;
+document.head.appendChild(style);
 
 export default Community;
