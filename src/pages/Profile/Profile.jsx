@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { profileService } from "../../services/profileService.js";
 import { EditProfile } from "./EditProfile.jsx";
-import SideBar from '../SideBar/SideBar.jsx';
+import SideBar from "../SideBar/SideBar.jsx";
+import FollowerFollowingList from "./FollowerFollowingList.jsx";
 
 const Profile = () => {
   const { userId } = useParams();
@@ -30,6 +31,75 @@ const Profile = () => {
   const [savedLoading, setSavedLoading] = useState(false);
   const [likedLoading, setLikedLoading] = useState(false);
   const [goalsLoading, setGoalsLoading] = useState(false);
+
+  // state variables for FollowerFollowingList
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [followersData, setFollowersData] = useState([]);
+  const [followingData, setFollowingData] = useState([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
+  const [followersError, setFollowersError] = useState(null);
+  const [followingError, setFollowingError] = useState(null);
+
+  const loadFollowersData = async () => {
+    try {
+      setFollowersLoading(true);
+      setFollowersError(null);
+      const targetUserId = userId || user?.uid;
+
+      if (!targetUserId) {
+        throw new Error("No user ID available");
+      }
+
+      const followersDetails = await profileService.getFollowersDetails(
+        targetUserId
+      );
+      setFollowersData(followersDetails);
+    } catch (err) {
+      console.error("Failed to load followers data:", err);
+      setFollowersError("Failed to load followers. Please try again later.");
+    } finally {
+      setFollowersLoading(false);
+    }
+  };
+
+  const loadFollowingData = async () => {
+    try {
+      setFollowingLoading(true);
+      setFollowingError(null);
+      const targetUserId = userId || user?.uid;
+
+      if (!targetUserId) {
+        throw new Error("No user ID available");
+      }
+
+      const followingDetails = await profileService.getFollowingDetails(
+        targetUserId
+      );
+      setFollowingData(followingDetails);
+    } catch (err) {
+      console.error("Failed to load following data:", err);
+      setFollowingError("Failed to load following. Please try again later.");
+    } finally {
+      setFollowingLoading(false);
+    }
+  };
+
+  // Add these handlers for opening the modals
+  const handleOpenFollowersModal = () => {
+    if (!followersData.length && !followersLoading) {
+      loadFollowersData();
+    }
+    setShowFollowersModal(true);
+  };
+
+  const handleOpenFollowingModal = () => {
+    if (!followingData.length && !followingLoading) {
+      loadFollowingData();
+    }
+    setShowFollowingModal(true);
+  };
 
   // Determine if this is the current user's profile
   const isCurrentUserProfile = userId ? user?.uid === userId : true;
@@ -383,7 +453,7 @@ const Profile = () => {
       <div className="w-72 h-full bg-black flex items-center justify-center p-3">
         <SideBar />
       </div>
-      
+
       {/* Main Content - Always display this structure, even when loading */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden h-screen">
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -400,7 +470,7 @@ const Profile = () => {
                 <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
                 <div className="h-16 bg-gray-700 rounded w-64 max-w-md mb-6"></div>
                 <div className="h-10 bg-gray-700 rounded-full w-32"></div>
-                
+
                 {/* Skeleton for stats */}
                 <div className="grid grid-cols-3 gap-4 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg p-6 mt-8 w-full">
                   <div className="flex flex-col items-center">
@@ -420,11 +490,22 @@ const Profile = () => {
             ) : error ? (
               /* Error state */
               <div className="bg-red-900 bg-opacity-20 p-6 rounded-lg border border-red-700 text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-12 w-12 mx-auto text-red-500 mb-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
                 <p className="text-red-400 text-lg">{error}</p>
-                <button 
+                <button
                   onClick={loadProfileData}
                   className="mt-4 px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white"
                 >
@@ -442,11 +523,19 @@ const Profile = () => {
                 {/* Profile Picture Section */}
                 <div className="flex flex-col items-center">
                   <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg mb-4">
-                    <img
-                      src={profileData.profilePic || "/default-profile.png"}
-                      alt={`${profileData.name}'s profile`}
-                      className="w-full h-full object-cover"
-                    />
+                    {profileData.profilePic ? (
+                      <img
+                        src={profileData.profilePic}
+                        alt={`${profileData.name}'s profile`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#333] flex items-center justify-center">
+                        <span className="text-gray-400 text-3xl font-bold">
+                          {profileData.name?.charAt(0) || "U"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {isCurrentUserProfile && (
                     <input
@@ -489,17 +578,30 @@ const Profile = () => {
 
                 {/* Stats Section */}
                 <div className="grid grid-cols-3 gap-4 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg p-6 mt-8">
+                  {/* Posts - No background as it's not clickable */}
                   <div className="flex flex-col items-center">
-                    <span className="font-bold text-2xl text-white">{stats.posts}</span>
+                    <span className="font-bold text-2xl text-white">
+                      {stats.posts}
+                    </span>
                     <span className="text-gray-400 text-sm">Posts</span>
                   </div>
-                  <div className="flex flex-col items-center">
+
+                  {/* Followers - With visible background to indicate clickability */}
+                  <div
+                    className="flex flex-col items-center cursor-pointer bg-gray-700 p-2 rounded-lg transition-colors hover:bg-gray-600"
+                    onClick={handleOpenFollowersModal}
+                  >
                     <span className="font-bold text-2xl text-white">
                       {stats.followers}
                     </span>
                     <span className="text-gray-400 text-sm">Followers</span>
                   </div>
-                  <div className="flex flex-col items-center">
+
+                  {/* Following - With visible background to indicate clickability */}
+                  <div
+                    className="flex flex-col items-center cursor-pointer bg-gray-700 p-2 rounded-lg transition-colors hover:bg-gray-600"
+                    onClick={handleOpenFollowingModal}
+                  >
                     <span className="font-bold text-2xl text-white">
                       {stats.following}
                     </span>
@@ -530,126 +632,132 @@ const Profile = () => {
                 <div className="p-6 pt-0">
                   <div className="grid grid-cols-1 gap-6">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="bg-gray-700 p-4 rounded-lg h-36"></div>
+                      <div
+                        key={i}
+                        className="bg-gray-700 p-4 rounded-lg h-36"
+                      ></div>
                     ))}
                   </div>
                 </div>
               </div>
-            ) : !error && profileData && (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-6">
-                  <button
-                    onClick={() => setActiveSection("posts")}
-                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-                      activeSection === "posts"
-                        ? "bg-indigo-800 bg-opacity-50"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center mb-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm">My Posts</span>
-                  </button>
+            ) : (
+              !error &&
+              profileData && (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-6">
+                    <button
+                      onClick={() => setActiveSection("posts")}
+                      className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                        activeSection === "posts"
+                          ? "bg-indigo-800 bg-opacity-50"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center mb-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm">My Posts</span>
+                    </button>
 
-                  <button
-                    onClick={() => setActiveSection("liked")}
-                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-                      activeSection === "liked"
-                        ? "bg-pink-800 bg-opacity-50"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-pink-600 flex items-center justify-center mb-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm">Liked Posts</span>
-                  </button>
+                    <button
+                      onClick={() => setActiveSection("liked")}
+                      className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                        activeSection === "liked"
+                          ? "bg-pink-800 bg-opacity-50"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-pink-600 flex items-center justify-center mb-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm">Liked Posts</span>
+                    </button>
 
-                  <button
-                    onClick={() => setActiveSection("saved")}
-                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-                      activeSection === "saved"
-                        ? "bg-purple-800 bg-opacity-50"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mb-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm">Saved Posts</span>
-                  </button>
+                    <button
+                      onClick={() => setActiveSection("saved")}
+                      className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                        activeSection === "saved"
+                          ? "bg-purple-800 bg-opacity-50"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mb-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm">Saved Posts</span>
+                    </button>
 
-                  <button
-                    onClick={() => setActiveSection("goals")}
-                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-                      activeSection === "goals"
-                        ? "bg-green-800 bg-opacity-50"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center mb-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm">Shared Goals</span>
-                  </button>
-                </div>
+                    <button
+                      onClick={() => setActiveSection("goals")}
+                      className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                        activeSection === "goals"
+                          ? "bg-green-800 bg-opacity-50"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center mb-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm">Shared Goals</span>
+                    </button>
+                  </div>
 
-                {/* Content based on selected section */}
-                <div className="p-6 pt-0">{renderInterestContent()}</div>
-              </>
+                  {/* Content based on selected section */}
+                  <div className="p-6 pt-0">{renderInterestContent()}</div>
+                </>
+              )
             )}
           </div>
 
@@ -661,6 +769,25 @@ const Profile = () => {
               onSave={handleProfileUpdate}
             />
           )}
+
+          {/* Followers/Following Modals */}
+          <FollowerFollowingList
+            isOpen={showFollowersModal}
+            onClose={() => setShowFollowersModal(false)}
+            data={followersData}
+            title="Followers"
+            isLoading={followersLoading}
+            error={followersError}
+          />
+
+          <FollowerFollowingList
+            isOpen={showFollowingModal}
+            onClose={() => setShowFollowingModal(false)}
+            data={followingData}
+            title="Following"
+            isLoading={followingLoading}
+            error={followingError}
+          />
         </div>
       </div>
     </div>

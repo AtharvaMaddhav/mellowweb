@@ -174,7 +174,7 @@ export default function PostSection() {
           {currentUser && (
             <button 
               onClick={() => setShowAddPost(!showAddPost)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 transition-all shadow-lg"
+              className="cursor-pointer bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 transition-all shadow-lg"
             >
               <Plus size={18} />
               Create Post
@@ -335,11 +335,13 @@ export default function PostSection() {
 
                     {/* User Info - Make the name clickable */}
                     <div className="ml-3 flex-grow">
-                      <p 
-                        className="font-bold text-white cursor-pointer hover:text-purple-400 transition"
-                        onClick={() => post.uid && handleOpenProfile(post.uid)}
-                      >
-                        {post.userData?.name || "Unknown User"}
+                      <p className="font-bold text-white">
+                        <span 
+                          className="cursor-pointer hover:text-purple-400 transition"
+                          onClick={() => post.uid && handleOpenProfile(post.uid)}
+                        >
+                          {post.userData?.name || "Unknown User"}
+                        </span>
                       </p>
                       <p className="text-xs text-gray-400">
                         {formatTime(post.createdAt)}

@@ -15,7 +15,7 @@ const saveUserToFirestore = async (user, name = "User", authType = "email_signup
     email: user.email,
     profilePic: user.photoURL || "",
     authType,
-    bio: "Hey there! I am using this app.",
+    bio: "Mellow by Choice!",
     createdAt: serverTimestamp(),
     lastSeen: serverTimestamp(),
     isOnline: true,
