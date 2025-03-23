@@ -101,7 +101,7 @@ const HomePage = () => {
           <h1 className="text-4xl font-bold">Welcome to Mellow, {user.displayName || 'Guest'}!</h1>
           <button
             onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 cursor-pointer"
           >
             Logout
           </button>

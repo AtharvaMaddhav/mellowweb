@@ -72,6 +72,7 @@ const Profile = () => {
     }
   };
 
+  // Other functions remain the same...
   const loadSectionData = async (section, targetUserId) => {
     const userId = targetUserId || user?.uid;
 
@@ -187,6 +188,7 @@ const Profile = () => {
   };
 
   const renderPostGrid = (posts, loading) => {
+    // Post grid rendering code remains the same...
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
@@ -296,6 +298,7 @@ const Profile = () => {
   };
 
   const renderGoalGrid = (goals, loading) => {
+    // Goal grid rendering code remains the same...
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
@@ -373,241 +376,293 @@ const Profile = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-900">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-t-indigo-500 border-indigo-200 rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-400 text-lg">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-900">
-        <div className="bg-red-900 bg-opacity-20 p-6 rounded-lg border border-red-700">
-          <p className="text-red-400 text-lg">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!profileData) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-900">
-        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <p className="text-gray-400 text-lg">Profile not found</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Here's the improved UI approach with skeleton loading
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 bg-gray-900 min-h-screen text-gray-200">
-      <SideBar />
-      {/* Header with gradient */}
-      <div className="h-32 bg-gradient-to-r from-indigo-900 to-purple-900 rounded-t-lg mb-16 relative"></div>
+    <div className="flex h-screen bg-gray-900 text-gray-200">
+      {/* Sidebar Component */}
+      <div className="w-72 h-full bg-black flex items-center justify-center p-3">
+        <SideBar />
+      </div>
+      
+      {/* Main Content - Always display this structure, even when loading */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden h-screen">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Header with gradient - Always show this */}
+          <div className="h-32 bg-gradient-to-r from-indigo-900 to-purple-900 rounded-t-lg mb-16 relative"></div>
 
-      <div className="relative -mt-24 mb-10">
-        {/* Profile Picture Section */}
-        <div className="flex flex-col items-center">
-          <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg mb-4">
-            <img
-              src={profileData.profilePic || "/default-profile.png"}
-              alt={`${profileData.name}'s profile`}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {isCurrentUserProfile && (
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleProfilePictureChange}
-              accept="image/*"
-              className="hidden"
-            />
-          )}
+          {/* Instead of full-screen loading, show skeleton UI */}
+          <div className="relative -mt-24 mb-10">
+            {isLoading ? (
+              /* Skeleton loading for profile section */
+              <div className="flex flex-col items-center animate-pulse">
+                <div className="w-32 h-32 rounded-full bg-gray-700 mb-4"></div>
+                <div className="h-6 bg-gray-700 rounded w-48 mb-2"></div>
+                <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
+                <div className="h-16 bg-gray-700 rounded w-64 max-w-md mb-6"></div>
+                <div className="h-10 bg-gray-700 rounded-full w-32"></div>
+                
+                {/* Skeleton for stats */}
+                <div className="grid grid-cols-3 gap-4 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg p-6 mt-8 w-full">
+                  <div className="flex flex-col items-center">
+                    <div className="h-8 bg-gray-700 rounded w-12 mb-1"></div>
+                    <div className="h-4 bg-gray-700 rounded w-16"></div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="h-8 bg-gray-700 rounded w-12 mb-1"></div>
+                    <div className="h-4 bg-gray-700 rounded w-16"></div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="h-8 bg-gray-700 rounded w-12 mb-1"></div>
+                    <div className="h-4 bg-gray-700 rounded w-16"></div>
+                  </div>
+                </div>
+              </div>
+            ) : error ? (
+              /* Error state */
+              <div className="bg-red-900 bg-opacity-20 p-6 rounded-lg border border-red-700 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-red-400 text-lg">{error}</p>
+                <button 
+                  onClick={loadProfileData}
+                  className="mt-4 px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : !profileData ? (
+              /* Profile not found state */
+              <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 text-center">
+                <p className="text-gray-400 text-lg">Profile not found</p>
+              </div>
+            ) : (
+              /* Actual profile content when loaded */
+              <>
+                {/* Profile Picture Section */}
+                <div className="flex flex-col items-center">
+                  <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg mb-4">
+                    <img
+                      src={profileData.profilePic || "/default-profile.png"}
+                      alt={`${profileData.name}'s profile`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {isCurrentUserProfile && (
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleProfilePictureChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  )}
 
-          <h1 className="text-2xl font-medium text-white mb-1">
-            {profileData.name}
-          </h1>
+                  <h1 className="text-2xl font-medium text-white mb-1">
+                    {profileData.name}
+                  </h1>
 
-          <div className="flex items-center mb-4">
-            {profileData.isOnline && (
-              <span className="flex items-center text-xs text-green-400 mr-2">
-                <span className="h-2 w-2 rounded-full bg-green-400 mr-1"></span>
-                Online
-              </span>
+                  <div className="flex items-center mb-4">
+                    {profileData.isOnline && (
+                      <span className="flex items-center text-xs text-green-400 mr-2">
+                        <span className="h-2 w-2 rounded-full bg-green-400 mr-1"></span>
+                        Online
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="max-w-md text-center mb-6">
+                    <p className="text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+                      {profileData.bio || "No bio yet"}
+                    </p>
+                  </div>
+
+                  {isCurrentUserProfile && (
+                    <button
+                      onClick={handleEditProfileClick}
+                      className="px-6 py-2 bg-indigo-600 rounded-full text-sm font-semibold cursor-pointer text-white hover:bg-indigo-700 transition-colors"
+                    >
+                      Edit Profile
+                    </button>
+                  )}
+                </div>
+
+                {/* Stats Section */}
+                <div className="grid grid-cols-3 gap-4 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg p-6 mt-8">
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-2xl text-white">{stats.posts}</span>
+                    <span className="text-gray-400 text-sm">Posts</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-2xl text-white">
+                      {stats.followers}
+                    </span>
+                    <span className="text-gray-400 text-sm">Followers</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-2xl text-white">
+                      {stats.following}
+                    </span>
+                    <span className="text-gray-400 text-sm">Following</span>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
-          <div className="max-w-md text-center mb-6">
-            <p className="text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
-              {profileData.bio || "No bio yet"}
-            </p>
+          {/* Your Interests Section - Also use skeleton loading */}
+          <div className="bg-gray-800 rounded-lg mt-8 overflow-hidden">
+            <h2 className="text-xl font-medium px-6 py-4 border-b border-gray-700">
+              Your Interests
+            </h2>
+
+            {isLoading ? (
+              /* Skeleton loading for interests section */
+              <div className="animate-pulse">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-6">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-gray-700 p-4 rounded-lg">
+                      <div className="w-12 h-12 rounded-full bg-gray-600 mx-auto mb-2"></div>
+                      <div className="h-4 bg-gray-600 rounded mx-auto w-16"></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="grid grid-cols-1 gap-6">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-gray-700 p-4 rounded-lg h-36"></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : !error && profileData && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-6">
+                  <button
+                    onClick={() => setActiveSection("posts")}
+                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                      activeSection === "posts"
+                        ? "bg-indigo-800 bg-opacity-50"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center mb-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm">My Posts</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveSection("liked")}
+                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                      activeSection === "liked"
+                        ? "bg-pink-800 bg-opacity-50"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-pink-600 flex items-center justify-center mb-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm">Liked Posts</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveSection("saved")}
+                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                      activeSection === "saved"
+                        ? "bg-purple-800 bg-opacity-50"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mb-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm">Saved Posts</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveSection("goals")}
+                    className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+                      activeSection === "goals"
+                        ? "bg-green-800 bg-opacity-50"
+                        : "bg-gray-700 hover:bg-gray-600"
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center mb-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm">Shared Goals</span>
+                  </button>
+                </div>
+
+                {/* Content based on selected section */}
+                <div className="p-6 pt-0">{renderInterestContent()}</div>
+              </>
+            )}
           </div>
 
-          {isCurrentUserProfile && (
-            <button
-              onClick={handleEditProfileClick}
-              className="px-6 py-2 bg-indigo-600 rounded-full text-sm font-semibold cursor-pointer text-white hover:bg-indigo-700 transition-colors"
-            >
-              Edit Profile
-            </button>
+          {/* Edit Profile Modal */}
+          {showEditModal && (
+            <EditProfile
+              profileData={profileData}
+              onClose={handleEditProfileClose}
+              onSave={handleProfileUpdate}
+            />
           )}
         </div>
-
-        {/* Stats Section */}
-        <div className="grid grid-cols-3 gap-4 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg p-6 mt-8">
-          <div className="flex flex-col items-center">
-            <span className="font-bold text-2xl text-white">{stats.posts}</span>
-            <span className="text-gray-400 text-sm">Posts</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="font-bold text-2xl text-white">
-              {stats.followers}
-            </span>
-            <span className="text-gray-400 text-sm">Followers</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="font-bold text-2xl text-white">
-              {stats.following}
-            </span>
-            <span className="text-gray-400 text-sm">Following</span>
-          </div>
-        </div>
       </div>
-
-      {/* Your Interests Section */}
-      <div className="bg-gray-800 rounded-lg mt-8 overflow-hidden">
-        <h2 className="text-xl font-medium px-6 py-4 border-b border-gray-700">
-          Your Interests
-        </h2>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-6">
-          <button
-            onClick={() => setActiveSection("posts")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-              activeSection === "posts"
-                ? "bg-indigo-800 bg-opacity-50"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
-          >
-            <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center mb-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <span className="text-sm">My Posts</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection("liked")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-              activeSection === "liked"
-                ? "bg-pink-800 bg-opacity-50"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
-          >
-            <div className="w-12 h-12 rounded-full bg-pink-600 flex items-center justify-center mb-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-            </div>
-            <span className="text-sm">Liked Posts</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection("saved")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-              activeSection === "saved"
-                ? "bg-purple-800 bg-opacity-50"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
-          >
-            <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mb-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                />
-              </svg>
-            </div>
-            <span className="text-sm">Saved Posts</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection("goals")}
-            className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-              activeSection === "goals"
-                ? "bg-green-800 bg-opacity-50"
-                : "bg-gray-700 hover:bg-gray-600"
-            }`}
-          >
-            <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center mb-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <span className="text-sm">Shared Goals</span>
-          </button>
-        </div>
-
-        {/* Content based on selected section */}
-        <div className="p-6 pt-0">{renderInterestContent()}</div>
-      </div>
-
-      {/* Edit Profile Modal */}
-      {showEditModal && (
-        <EditProfile
-          profileData={profileData}
-          onClose={handleEditProfileClose}
-          onSave={handleProfileUpdate}
-        />
-      )}
     </div>
   );
 };
