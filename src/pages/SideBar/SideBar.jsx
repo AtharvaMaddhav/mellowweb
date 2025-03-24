@@ -7,18 +7,18 @@ const Sidebar = () => {
 <<<<<<< Updated upstream
     { path: '/', icon: <Home size={40} />, text: 'Home' },
     { path: '/search', icon: <Search size={40} />, text: 'Search' },
-    { path: '/explore', icon: <Compass size={40} />, text: 'Explore' },
+    { path: '/about', icon: <Compass size={40} />, text: 'About us' },
     { path: '/goal', icon: <Target size={40} />, text: 'Daily Goals' },
     { path: '/chat', icon: <MessageCircle size={40} />, text: 'Chat' },
     { path: '/notifications', icon: <Heart size={40} />, text: 'Notifications' },
-    { path: '/create', icon: <Plus size={40} />, text: 'Create' },
+    { path: '/post', icon: <Plus size={40} />, text: 'Post' },
     { path: '/profile', icon: <User size={40} />, text: 'Profile' },
     { path: '/community', icon: <Users size={40} />, text: 'Community' },
     { path: '/more', icon: <MoreHorizontal size={40} />, text: 'More' },
   ];
   
   return (
-    <div className="h-screen w-80 bg-black text-white p-6 flex flex-col">
+    <div className="fixed top-0 left-0 h-screen w-75 bg-black text-white p-4 border-r border-gray-800 overflow-y-auto">
       <h1 className="text-5xl font-bold mb-6">Mellow!</h1>
       <div className="flex flex-col gap-5">
 =======
