@@ -1,4 +1,4 @@
-import { db} from "../config/firebase";
+import { db, storage } from "../config/firebase";
 import {
   doc,
   getDoc,
@@ -7,7 +7,7 @@ import {
   query,
   where,
   getDocs,
-} from "firebase/firestore";
+} from "firebase/firestore"; 
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export const profileService = {
@@ -311,4 +311,4 @@ export const profileService = {
       throw error;
     }
   },
-};
+ };
