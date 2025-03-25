@@ -100,4 +100,4 @@ export const funActivities = [
     { id: 98, title: "Create a list of affirmations for difficult days" },
     { id: 99, title: "Make art using only found objects from your home" },
     { id: 100, title: "Create a 'perfect day' morning routine" }
-  ];
+];

@@ -8,7 +8,7 @@ import Goals from "./pages/Goals/Goals.jsx";
 import PostPage from "./pages/Posts/PostPage.jsx";
 import Search from "./pages/Search/Search.jsx";
 import Explore from "./pages/Explore/Explore.jsx";
-import Chats from "./pages/Chats/Chats.jsx";
+import Chats from "./pages/Chat/ChatIntro.jsx";
 import Notifications from "./pages/Notifications/Notifications.jsx";
 import Create from "./pages/Create/Create.jsx";
 import Profile from "./pages/Profile/Profile.jsx";

@@ -99,7 +99,7 @@ export const getPastActivities = async (days = 7) => {
   const activities = [];
   const today = new Date();
 
-  for (let i = 1; i <= days; i++) {
+  for (let i = 1; i <= 3; i++) {
     const pastDate = new Date(today);
     pastDate.setDate(today.getDate() - i);
     const formattedDate = formatDate(pastDate);
