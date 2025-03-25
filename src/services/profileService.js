@@ -7,7 +7,9 @@ import {
   query,
   where,
   getDocs,
+
 } from "firebase/firestore";
+
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export const profileService = {
@@ -311,4 +313,8 @@ export const profileService = {
       throw error;
     }
   },
+<<<<<<< HEAD
 };
+=======
+ };
+>>>>>>> Nandini
