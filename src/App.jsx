@@ -13,6 +13,7 @@ import Notifications from "./pages/Notifications/Notifications.jsx";
 import Create from "./pages/Create/Create.jsx";
 import Profile from "./pages/Profile/Profile.jsx";
 import Community from "./pages/Community/Community.jsx";
+import AboutUs from './pages/About/AboutUs.jsx';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
         <Route path="/profile/:userId" element={<Profile />} />
         <Route path="/search" element={<Search />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/about" element={<AboutUs />} />
       </Routes>
     </AuthProvider>
   );
