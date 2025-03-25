@@ -1,4 +1,4 @@
-import { React } from 'react'
+import  React  from 'react'
 import './App.css'
 import HomePage from './pages/Home/HomePage.jsx'
 import AuthenticationPage from './pages/Authentication/AuthenticationPage.jsx'
@@ -7,7 +7,7 @@ import Goals from './pages/Goals/Goals.jsx'
 import PostPage from './pages/Posts/PostPage.jsx'
 import Search from './pages/Search/Search.jsx';
 import Explore from './pages/Explore/Explore.jsx';
-
+import GoalDetails from './pages/Goals/GoalDetails.jsx'
 import Notifications from './pages/Notifications/Notifications.jsx';
 import Create from './pages/Create/Create.jsx';
 import Profile from './pages/Profile/Profile.jsx';
@@ -27,7 +27,7 @@ function App() {
       <Route path='/goal' element={< Goals />} />
       <Route path='/post' element={< PostPage />} />
       <Route path="/explore" element={<Explore />} />
-
+      <Route path='/goals/:goalId' element={< GoalDetails/>} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/create" element={<Create />} />
       <Route path="/profile" element={<Profile />} />

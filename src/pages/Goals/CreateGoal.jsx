@@ -3,7 +3,7 @@ import { X, Calendar, Image } from "lucide-react";
 import axios from "axios";
 import { cloudinaryConfig } from "../../config/cloudinary.js"; // Update this path
 import { doc, setDoc, collection } from "firebase/firestore";
-import { db } from "../../config/firebase"; // Update this path to where your Firebase config is
+import { db, auth } from "../../config/firebase"; // Update this path to where your Firebase config is
 
 const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
   const [goalData, setGoalData] = useState({
@@ -83,17 +83,21 @@ const CreateGoal = ({ isOpen, onClose, onCreateGoal }) => {
         imageUrl = await uploadImageToCloudinary(goalData.image);
       }
       
-      // Create goal data with image URL
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User is not authenticated");
+      }
+
       const finalGoalData = {
         title: goalData.title,
         description: goalData.description,
         startDate: goalData.startDate,
         endDate: goalData.endDate,
         goalImage: imageUrl || "", // Consistent field name
-        goalType: goalData.isPublic ? "public" : "private",
-        numberOfUsersCompleted: 0,
-        userId: "4Avy2gnDizxdsWRMYL2i", // Replace with actual user ID from auth
-        members: [] // Initialize empty members array
+        goalType: goalData.isPublic ? "Public" : "Private",
+        completedBy: [], // Empty array to track users who completed the goal
+        userId: user.uid, // Use the authenticated user's ID
+        members: goalData.isPublic ? [user.uid] : [] // Add current user to members if public
       };
       
       // Get a new document reference with auto-generated ID

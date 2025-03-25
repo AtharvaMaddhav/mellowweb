@@ -6,15 +6,29 @@ import PublicGoals from "./PublicGoals";
 import PrivateGoals from "./PrivateGoals";
 import CreateGoal from "./CreateGoal";
 import FilterGoals from "./FilterGoals";
-import { db }  from "../../config/firebase";
-import { collection, addDoc, getDocs, query, where, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "../../config/firebase";
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  query, 
+  where, 
+  serverTimestamp, 
+  doc, 
+  updateDoc, 
+  arrayUnion,
+  onSnapshot
+} from "firebase/firestore";
 
 const Goals = () => {
-  const [activeTab, setActiveTab] = useState("public");
+  const [activeTab, setActiveTab] = useState("Public");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [publicGoals, setPublicGoals] = useState([]);
   const [privateGoals, setPrivateGoals] = useState([]);
+  const [recommendedGoals, setRecommendedGoals] = useState([]);
+  const [joiningGoalId, setJoiningGoalId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [activeFilters, setActiveFilters] = useState({
     status: [],
     dateRange: {
@@ -27,101 +41,160 @@ const Goals = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Current user ID - In a real app, this would come from authentication
-  const currentUserId = "4Avy2gnDizxdsWRMYL2i";
-
-  // Fetch goals from Firestore on component mount
+  // Listen for authentication state changes
   useEffect(() => {
-    const fetchGoals = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Create queries for public and private goals
-        const publicQuery = query(
-          collection(db, "goals"), 
-          where("goalType", "==", "public")
-        );
-        
-        const privateQuery = query(
-          collection(db, "goals"), 
-          where("goalType", "==", "private"),
-          where("userId", "==", currentUserId)
-        );
-        
-        // Fetch goals
-        const publicSnapshot = await getDocs(publicQuery);
-        const privateSnapshot = await getDocs(privateQuery);
-        
-        // Convert snapshots to arrays with IDs
-        const publicGoalsData = publicSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        const privateGoalsData = privateSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        // Update state
-        setPublicGoals(publicGoalsData);
-        setPrivateGoals(privateGoalsData);
-      } catch (error) {
-        console.error("Error fetching goals:", error);
-      } finally {
-        setIsLoading(false);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is signed in, set the currentUserId
+        setCurrentUserId(user.uid);
+      } else {
+        // User is signed out, set currentUserId to null
+        setCurrentUserId(null);
+        // Optionally, you could redirect to a login page here
       }
-    };
+    });
     
-    fetchGoals();
+    // Clean up the auth listener on component unmount
+    return () => unsubscribe();
+  }, []);
+
+  // Set up real-time listeners for goals
+  useEffect(() => {
+    // Don't fetch goals if there's no authenticated user
+    if (!currentUserId) {
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    // Create queries for public goals
+    // We now use two separate queries:
+    
+    // 1. For public goals where the current user is a member
+    const publicMemberGoalsQuery = query(
+      collection(db, "goals"),
+      where("goalType", "==", "Public"),
+      where("members", "array-contains", currentUserId)
+    );
+    
+    // 2. For all other public goals (for recommended section)
+    const allPublicGoalsQuery = query(
+      collection(db, "goals"), 
+      where("goalType", "==", "Public")
+    );
+    
+    // For private goals
+    const privateGoalsQuery = query(
+      collection(db, "goals"), 
+      where("goalType", "==", "Private"),
+      where("userId", "==", currentUserId)
+    );
+    
+    // Set up real-time listener for public goals where user is a member
+    const unsubscribePublicMember = onSnapshot(publicMemberGoalsQuery, (snapshot) => {
+      const memberPublicGoalsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Update state with public goals where user is a member
+      setPublicGoals(memberPublicGoalsData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching public goals where user is a member:", error);
+      setIsLoading(false);
+    });
+    
+    // Set up real-time listener for all public goals (to determine recommendations)
+    const unsubscribeAllPublic = onSnapshot(allPublicGoalsQuery, (snapshot) => {
+      const publicGoalsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Filter for goals where the user is NOT a member (for recommendations)
+      const recommendedGoalsData = publicGoalsData.filter(goal => 
+        !goal.members || !goal.members.includes(currentUserId)
+      );
+      
+      // Update state with recommended goals
+      setRecommendedGoals(recommendedGoalsData);
+    }, (error) => {
+      console.error("Error fetching all public goals:", error);
+    });
+    
+    // Set up real-time listener for private goals
+    const unsubscribePrivate = onSnapshot(privateGoalsQuery, (snapshot) => {
+      const privateGoalsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      setPrivateGoals(privateGoalsData);
+    }, (error) => {
+      console.error("Error fetching private goals:", error);
+    });
+    
+    // Clean up listeners when component unmounts
+    return () => {
+      unsubscribePublicMember();
+      unsubscribeAllPublic();
+      unsubscribePrivate();
+    };
   }, [currentUserId]);
 
   const handleCreateGoal = async (goalData) => {
     try {
       // The goal is already created in the CreateGoal component
-      // So we just need to update the local state
-      
-      // Check if the goal exists in our local state
-      // (it should already be in Firestore from the CreateGoal component)
-      const goalExistsInPublic = publicGoals.some(goal => 
-        goal.title === goalData.title && 
-        goal.description === goalData.description &&
-        new Date(goal.startDate).toDateString() === new Date(goalData.startDate).toDateString());
-        
-      const goalExistsInPrivate = privateGoals.some(goal => 
-        goal.title === goalData.title && 
-        goal.description === goalData.description &&
-        new Date(goal.startDate).toDateString() === new Date(goalData.startDate).toDateString());
-      
-      // Only add to state if it doesn't exist yet
-      if (!goalExistsInPublic && !goalExistsInPrivate) {
-        const newGoal = {
-          id: goalData.id || `temp-${Date.now()}`, // Use the ID from Firestore or a temporary one
-          title: goalData.title,
-          description: goalData.description,
-          startDate: new Date(goalData.startDate),
-          endDate: new Date(goalData.endDate),
-          goalImage: goalData.goalImage || "", // Use the proper field name from CreateGoal
-          goalType: goalData.goalType, // Use the value already set in CreateGoal
-          userId: currentUserId,
-          members: [currentUserId],
-          numberOfUsersCompleted: 0,
-          completed: false,
-          createdAt: new Date() // Use client-side date as fallback
-        };
-        
-        if (goalData.goalType === "public") {
-          setPublicGoals(prevGoals => [newGoal, ...prevGoals]);
-        } else {
-          setPrivateGoals(prevGoals => [newGoal, ...prevGoals]);
-        }
-      }
+      // With real-time listeners, the UI will update automatically
+      // when the new document is added to Firestore
       
       // Automatically switch to the tab where the goal was added
-      setActiveTab(goalData.goalType === "public" ? "public" : "private");
+      setActiveTab(goalData.goalType);
     } catch (error) {
       console.error("Error updating local state for goal:", error);
       alert("Goal was created but there was an issue updating the view. Please refresh.");
+    }
+  };
+
+  // Handle join goal functionality
+  const handleJoinGoal = async (goalWithUpdatedMembers) => {
+    // Ensure we have a valid ID by trying all possible ID fields
+    const goalId = goalWithUpdatedMembers.id || 
+                  goalWithUpdatedMembers._id || 
+                  goalWithUpdatedMembers.goalId;
+    
+    if (!goalId) {
+      console.error("Cannot join goal: Invalid goal ID", goalWithUpdatedMembers);
+      return;
+    }
+    
+    setJoiningGoalId(goalId);
+    
+    try {
+      // Log the goal ID to help with debugging
+      console.log("Joining goal with ID:", goalId);
+      
+      // Update the Firestore document to add the current user to members
+      const goalRef = doc(db, "goals", goalId);
+      await updateDoc(goalRef, {
+        members: arrayUnion(currentUserId),
+        // Add a timestamp for the "New" badge functionality
+        joinedAt: serverTimestamp()
+      });
+      
+      // No need to manually update state here anymore
+      // The real-time listener will automatically update publicGoals and recommendedGoals
+      
+      // Notify user of successful join
+      console.log(`Successfully joined goal: ${goalWithUpdatedMembers.title}`);
+      
+    } catch (error) {
+      console.error("Error joining goal:", error);
+      alert("Failed to join goal. Please try again.");
+    } finally {
+      setJoiningGoalId(null);
     }
   };
 
@@ -129,9 +202,6 @@ const Goals = () => {
     setActiveFilters(filters);
     setIsFiltering(true);
     console.log("Applied filters:", filters);
-    
-    // Here you would apply these filters to your goals data
-    // For example, filtering the public/private goals based on these criteria
   };
 
   const clearFilters = () => {
@@ -149,13 +219,13 @@ const Goals = () => {
 
   return (
     <div className="flex h-screen bg-black text-white">
-      {/* Sidebar Placeholder */}
-      <div className="w-96 h-full bg-black flex items-center justify-center p-5">
+      {/* Sidebar with reduced width */}
+      <div className="w-64 h-full bg-black flex items-center justify-center p-3">
         <SideBar />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-5 overflow-y-auto overflow-x-hidden h-screen">
+      {/* Main Content - with more space and shifted leftward */}
+      <div className="flex-1 p-5 pl-0 overflow-y-auto overflow-x-hidden h-screen">
         {/* Search Bar */}
         <div className="w-full p-3 bg-[#333] shadow-md mb-5 rounded-lg">
           <input
@@ -165,17 +235,32 @@ const Goals = () => {
           />
         </div>
 
-        {/* Recommended Goals Slider */}
-        <RecommendedGoalsSection />
+        {/* Show authentication status warning if not logged in */}
+        {!currentUserId && (
+          <div className="bg-yellow-900 text-yellow-100 p-4 rounded-lg mb-5">
+            <p>You are not currently logged in. Please sign in to view and manage your goals.</p>
+          </div>
+        )}
 
-        {/* Goals Section with Enhanced UI */}
-        <div className="bg-[#1A1A1A] rounded-xl p-8 mb-8 shadow-xl border border-gray-800">
-          <div className="flex justify-between items-center mb-8">
+        {/* Recommended Goals Slider - Only show if logged in */}
+        {currentUserId && (
+          <RecommendedGoalsSection 
+            goals={recommendedGoals}
+            currentUserId={currentUserId}
+            onJoinGoal={handleJoinGoal}
+            joiningGoalId={joiningGoalId}
+          />
+        )}
+
+        {/* Goals Section with Enhanced UI - Shifted left */}
+        <div className="bg-[#1A1A1A] rounded-xl p-6 mb-8 shadow-xl border border-gray-800">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Your Goals</h2>
             <div className="flex space-x-4">
               <button 
                 className="bg-[#333] px-4 py-2 rounded-lg hover:bg-[#444] text-sm"
                 onClick={() => setIsCreateModalOpen(true)}
+                disabled={!currentUserId}
               >
                 Create New
               </button>
@@ -184,13 +269,13 @@ const Goals = () => {
                   isFiltering ? "bg-purple-600 hover:bg-purple-700" : "bg-[#333] hover:bg-[#444]"
                 }`}
                 onClick={() => setIsFilterModalOpen(true)}
+                disabled={!currentUserId}
               >
                 <Filter size={14} />
                 {isFiltering ? `Filtering (${getActiveFilterCount(activeFilters)})` : "Filter"}
               </button>
             </div>
           </div>
-          
           {/* Active Filters Display */}
           {isFiltering && (
             <div className="mb-6 p-3 bg-[#2A2A2A] rounded-lg">
@@ -212,37 +297,41 @@ const Goals = () => {
           {/* Tabs for Public & Private with toggle functionality */}
           <div className="flex mb-6 border-b border-gray-800">
             <button
-              className={`px-6 py-3 font-medium flex items-center gap-2 ${
-                activeTab === "public"
+              className={`px-5 py-3 font-medium flex items-center gap-2 ${
+                activeTab === "Public"
                   ? "text-purple-400 border-b-2 border-purple-400"
                   : "text-gray-400 hover:text-gray-300"
               }`}
-              onClick={() => setActiveTab("public")}
+              onClick={() => setActiveTab("Public")}
             >
               <Globe size={16} />
               Public
             </button>
             <button
-              className={`px-6 py-3 font-medium flex items-center gap-2 ${
-                activeTab === "private"
+              className={`px-5 py-3 font-medium flex items-center gap-2 ${
+                activeTab === "Private"
                   ? "text-purple-400 border-b-2 border-purple-400"
                   : "text-gray-400 hover:text-gray-300"
               }`}
-              onClick={() => setActiveTab("private")}
+              onClick={() => setActiveTab("Private")}
             >
               <Lock size={16} />
               Private
             </button>
           </div>
 
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="text-center py-10">
+          {/* Authentication, Loading, or Content States */}
+          {!currentUserId ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Please sign in to view your goals</p>
+            </div>
+          ) : isLoading ? (
+            <div className="text-center py-8">
               <p className="text-gray-400">Loading goals...</p>
             </div>
           ) : (
             /* Goals Grid Layout - Conditionally rendered based on active tab */
-            activeTab === "public" ? 
+            activeTab === "Public" ? 
               <PublicGoals 
                 goals={publicGoals}
                 filters={isFiltering ? activeFilters : null} 
@@ -260,6 +349,7 @@ const Goals = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreateGoal={handleCreateGoal}
+        currentUserId={currentUserId}
       />
 
       {/* Filter Goals Modal */}
