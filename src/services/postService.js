@@ -14,6 +14,7 @@ import {
   addDoc,
   deleteDoc,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 
 // Fetch posts with pagination
@@ -123,6 +124,7 @@ export const fetchUserData = async (uid) => {
 export const toggleLike = async (postId, uid) => {
   try {
     const postRef = doc(db, "posts", postId);
+    const userRef = doc(db, "users", uid);
     const postSnap = await getDoc(postRef);
 
     if (!postSnap.exists()) {
@@ -131,10 +133,21 @@ export const toggleLike = async (postId, uid) => {
 
     const isLiked = postSnap.data().likes?.includes(uid);
 
-    // Add or remove like based on current state
-    await updateDoc(postRef, {
+    // using "batch" to bring more consistency/atomicity
+    const batch = writeBatch(db);
+
+    // Add or remove uid from the "posts" based on current state
+    batch.update(postRef, {
       likes: isLiked ? arrayRemove(uid) : arrayUnion(uid),
     });
+
+    // Add or remove postId from the "users" based on current state
+    batch.update(userRef, {
+      likedPosts: isLiked ? arrayRemove(postId) : arrayUnion(postId),
+    });
+
+    // commit the batch
+    await batch.commit();
 
     return true;
   } catch (error) {
@@ -179,7 +192,6 @@ export const reportPost = async (postId, uid) => {
 // Save a post to user's saved posts collection
 export const savePost = async (postId, uid) => {
   try {
-    // Add postId to user's savedPosts array
     const userRef = doc(db, "users", uid);
 
     // Use arrayUnion to add the postId to the savedPosts array
@@ -232,12 +244,30 @@ export const addPost = async (uid, postData) => {
       createdAt: serverTimestamp(),
     };
 
-    // Add to Firestore
-    const docRef = await addDoc(collection(db, "posts"), newPost);
+    // Create a new post document reference with an auto-generated id
+    const postsCollection = collection(db, "posts");
+    const newPostRef = doc(postsCollection);
+    const postId = newPostRef.id;
+
+    // Create a batch 
+    // (while batching - Data consistency guaranteed (both operations succeed or fail together))
+    const batch = writeBatch(db);
+    
+    // Add the post to the batch
+    batch.set(newPostRef, newPost);
+    
+    // Update the user's myPosts array
+    const userRef = doc(db, "users", uid);
+    batch.update(userRef, {
+      myPosts: arrayUnion(postId)
+    });
+    
+    // Commit the batch
+    await batch.commit();
 
     return {
       success: true,
-      postId: docRef.id,
+      postId: postId,
     };
   } catch (error) {
     console.error("Error adding post:", error.message);

@@ -14,6 +14,7 @@ export const CommentsSection = ({ postId, currentUser }) => {
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   
   // Load comments
   const loadComments = async () => {
@@ -23,6 +24,7 @@ export const CommentsSection = ({ postId, currentUser }) => {
     try {
       const fetchedComments = await getComments(postId);
       setComments(fetchedComments);
+      setCommentsLoaded(true);
     } catch (error) {
       console.error("Error loading comments:", error);
     } finally {
@@ -30,12 +32,16 @@ export const CommentsSection = ({ postId, currentUser }) => {
     }
   };
   
+  // Load comments when component mounts
+  useEffect(() => {
+    if (postId && !commentsLoaded) {
+      loadComments();
+    }
+  }, [postId]);
+  
   // Toggle comments visibility
   const toggleComments = () => {
     setShowComments(!showComments);
-    if (!showComments && comments.length === 0) {
-      loadComments();
-    }
   };
   
   // Handle adding a new comment

@@ -40,7 +40,7 @@ export const storeUserData = async (user, authType) => {
         email: user.email,
         profilePic: user.photoURL || "",
         authType: authType,
-        bio: "Hey there! I am using this app.",
+        bio: "Mellow by Choice!",
         createdAt: serverTimestamp(),
         lastSeen: serverTimestamp(),
         isOnline: true,
