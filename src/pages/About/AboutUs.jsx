@@ -159,7 +159,7 @@ export default function AboutUs() {
             <button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 shadow-lg hover:shadow-purple-500/50 transform hover:-translate-y-1">
               Join Our Community
             </button>
-            <button className="bg-transparent backdrop-blur-sm bg-purple-400/10 border-2 border-purple-400 text-purple-300 font-bold py-4 px-10 rounded-full hover:bg-purple-400/20 transition-all duration-300 transform hover:-translate-y-1">
+            <button className="bg-transparent backdrop-blur-sm border-2 border-purple-400 text-purple-300 font-bold py-4 px-10 rounded-full hover:bg-purple-400/20 transition-all duration-300 transform hover:-translate-y-1">
               Learn More
             </button>
           </div>
@@ -323,7 +323,7 @@ export default function AboutUs() {
             <button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 px-12 rounded-full transition-all duration-300 shadow-lg hover:shadow-purple-500/50 text-lg transform hover:-translate-y-1">
               Sign Up Now
             </button>
-            <button className="bg-transparent backdrop-blur-sm bg-purple-400/10 border-2 border-purple-400 text-purple-300 font-bold py-4 px-12 rounded-full hover:bg-purple-400/20 transition-all duration-300 text-lg flex items-center gap-2 transform hover:-translate-y-1">
+            <button className="bg-transparent backdrop-blur-sm border-2 border-purple-400 text-purple-300 font-bold py-4 px-12 rounded-full hover:bg-purple-400/20 transition-all duration-300 text-lg flex items-center gap-2 transform hover:-translate-y-1">
               <span>Take a Tour</span>
               <ArrowRight size={18} />
             </button>
