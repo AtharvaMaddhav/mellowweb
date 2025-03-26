@@ -67,7 +67,7 @@ export const Comment = ({
       
       {/* Comment Content */}
       <div className="mt-1 mb-2">
-        <p className="text-sm text-gray-800">{comment.commentText}</p>
+        <p className="text-sm text-white">{comment.commentText}</p>
       </div>
       
       {/* Reply Button */}
