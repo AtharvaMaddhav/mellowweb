@@ -8,8 +8,7 @@ import FollowerFollowingList from "./FollowerFollowingList.jsx";
 
 const Profile = () => {
   const { userId } = useParams();
-  const auth = useAuth();
-  const user = auth?.user;
+  const { user } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -110,13 +109,11 @@ const Profile = () => {
     try {
       setIsLoading(true);
       const targetUserId = userId || user?.uid;
-  
-      // This is where the error is happening
+
       if (!targetUserId) {
-        setIsLoading(false); // Make sure to set loading to false
-        setError("User not logged in or user ID not available.");
-        return; // Return early instead of throwing an error
+        throw new Error("No user ID available");
       }
+
       const userData = await profileService.getUserProfile(targetUserId);
       setProfileData(userData);
 
@@ -208,11 +205,8 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    // Only call loadProfileData when user authentication state is confirmed
-    if (user) {
-      loadProfileData();
-    }
-  }, [user, userId]);
+    loadProfileData();
+  }, [userId, user]);
 
   // Load section data when tab changes
   useEffect(() => {
