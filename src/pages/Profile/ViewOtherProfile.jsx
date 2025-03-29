@@ -3,6 +3,7 @@ import { profileService } from "../../services/profileService";
 import { auth } from "../../config/firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "../../config/firebase";
+import { useNavigate } from "react-router-dom";
 
 export const ViewOtherProfile = ({ userId, onClose }) => {
   const [profileData, setProfileData] = useState(null);
@@ -12,6 +13,7 @@ export const ViewOtherProfile = ({ userId, onClose }) => {
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const currentUser = auth.currentUser;
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -51,39 +53,46 @@ export const ViewOtherProfile = ({ userId, onClose }) => {
     try {
       // Update the other user's followers array
       const otherUserRef = doc(db, "users", userId);
-      
+
       // Update the current user's following array
       const currentUserRef = doc(db, "users", currentUser.uid);
 
       if (isFollowing) {
         // Unfollow
         await updateDoc(otherUserRef, {
-          followers: arrayRemove(currentUser.uid)
+          followers: arrayRemove(currentUser.uid),
         });
-        
+
         await updateDoc(currentUserRef, {
-          following: arrayRemove(userId)
+          following: arrayRemove(userId),
         });
-        
-        setFollowerCount(prev => prev - 1);
+
+        setFollowerCount((prev) => prev - 1);
       } else {
         // Follow
         await updateDoc(otherUserRef, {
-          followers: arrayUnion(currentUser.uid)
+          followers: arrayUnion(currentUser.uid),
         });
-        
+
         await updateDoc(currentUserRef, {
-          following: arrayUnion(userId)
+          following: arrayUnion(userId),
         });
-        
-        setFollowerCount(prev => prev + 1);
+
+        setFollowerCount((prev) => prev + 1);
       }
-      
+
       // Toggle the following state
       setIsFollowing(!isFollowing);
     } catch (error) {
       console.error("Error updating follow status:", error);
     }
+  };
+
+  const navigateToFullProfile = () => {
+    // Navigate to the profile page with the userId as a parameter
+    navigate(`/profile/${userId}`);
+    // Close the modal
+    onClose();
   };
 
   if (isLoading) {
@@ -151,34 +160,52 @@ export const ViewOtherProfile = ({ userId, onClose }) => {
             </div>
 
             <h3 className="text-xl font-bold mb-1">{profileData.name}</h3>
-            
+
             {/* Status Indicator */}
             {profileData.isOnline !== undefined && (
               <div className="flex items-center mb-2">
-                <div className={`w-2 h-2 rounded-full ${profileData.isOnline ? 'bg-green-500' : 'bg-gray-500'} mr-1`}></div>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    profileData.isOnline ? "bg-green-500" : "bg-gray-500"
+                  } mr-1`}
+                ></div>
                 <span className="text-sm text-gray-400">
-                  {profileData.isOnline ? 'Online' : 'Offline'}
+                  {profileData.isOnline ? "Online" : "Offline"}
                 </span>
               </div>
             )}
 
             {/* Bio */}
             {profileData.bio && (
-              <p className="text-gray-300 text-center mb-4">{profileData.bio}</p>
+              <p className="text-gray-300 text-center mb-4">
+                {profileData.bio}
+              </p>
             )}
 
-            {/* Follow Button */}
+            {/* Follow Button and View Profile Button */}
             {currentUser && currentUser.uid !== userId && (
-              <button
-                onClick={handleFollowToggle}
-                className={`cursor-pointer px-6 py-2 rounded text-sm font-semibold mb-6 transition-colors ${
-                  isFollowing
-                    ? 'bg-gray-700 text-gray-200 border border-gray-500 hover:bg-gray-600'
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
-                }`}
-              >
-                {isFollowing ? 'Following' : 'Follow'}
-              </button>
+              <div className="flex flex-col w-full items-center gap-3 mb-6">
+                <button
+                  onClick={handleFollowToggle}
+                  className={`cursor-pointer px-6 py-2 w-full max-w-xs rounded text-sm font-semibold transition-colors ${
+                    isFollowing
+                      ? "bg-gray-700 text-gray-200 border border-gray-500 hover:bg-gray-600"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                >
+                  {isFollowing ? "Following" : "Follow"}
+                </button>
+
+                {/* View Full Profile button - only shown when following */}
+                {isFollowing && (
+                  <button
+                    onClick={navigateToFullProfile}
+                    className="cursor-pointer px-6 py-2 w-full max-w-xs rounded text-sm font-semibold bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                  >
+                    View Full Profile
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Stats */}
