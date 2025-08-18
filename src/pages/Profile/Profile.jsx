@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -5,6 +6,8 @@ import { profileService } from "../../services/profileService.js";
 import { EditProfile } from "./EditProfile.jsx";
 import SideBar from "../SideBar/SideBar.jsx";
 import FollowerFollowingList from "./FollowerFollowingList.jsx";
+
+
 
 const Profile = () => {
   const { userId } = useParams();
@@ -24,13 +27,13 @@ const Profile = () => {
   const [userPosts, setUserPosts] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
-  const [sharedGoals, setSharedGoals] = useState([]);
+  const [reportData, setReportData] = useState([]); // Changed from sharedGoals to reportData
 
   // Loading states for each section
   const [postsLoading, setPostsLoading] = useState(false);
   const [savedLoading, setSavedLoading] = useState(false);
   const [likedLoading, setLikedLoading] = useState(false);
-  const [goalsLoading, setGoalsLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false); // Changed from goalsLoading to reportLoading
 
   // state variables for FollowerFollowingList
   const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -41,6 +44,14 @@ const Profile = () => {
   const [followingLoading, setFollowingLoading] = useState(false);
   const [followersError, setFollowersError] = useState(null);
   const [followingError, setFollowingError] = useState(null);
+
+  const navigate = useNavigate();
+
+  const handleReportClick = () => {
+  // Open report generator in a new tab
+  // window.open('/report-generator', '_blank');
+  navigate('/report-generator');
+};
 
   const loadFollowersData = async () => {
     try {
@@ -187,15 +198,15 @@ const Profile = () => {
         }
         break;
 
-      case "goals":
+      case "report": // Changed from "goals" to "report"
         try {
-          setGoalsLoading(true);
-          const goals = await profileService.getSharedGoals(userId);
-          setSharedGoals(goals);
+          setReportLoading(true);
+          const reports = await profileService.getUserReports(userId); // Updated service method
+          setReportData(reports);
         } catch (err) {
-          console.error("Failed to load goals:", err);
+          console.error("Failed to load reports:", err);
         } finally {
-          setGoalsLoading(false);
+          setReportLoading(false);
         }
         break;
 
@@ -367,20 +378,20 @@ const Profile = () => {
     );
   };
 
-  const renderGoalGrid = (goals, loading) => {
-    // Goal grid rendering code remains the same...
+  // New function to render report grid instead of goal grid
+  const renderReportGrid = (reports, loading) => {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
-          <div className="w-10 h-10 border-4 border-t-green-500 border-green-200 rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
         </div>
       );
     }
 
-    if (!goals || goals.length === 0) {
+    if (!reports || reports.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center min-h-40 py-12 text-center">
-          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 text-white"
@@ -392,14 +403,14 @@ const Profile = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
           </div>
-          <h3 className="text-xl text-gray-200 mb-2">No Shared Goals</h3>
+          <h3 className="text-xl text-gray-200 mb-2">No Reports Available</h3>
           {isCurrentUserProfile && (
             <p className="text-gray-400">
-              Track your journey with the community
+              Your reports will appear here
             </p>
           )}
         </div>
@@ -408,23 +419,34 @@ const Profile = () => {
 
     return (
       <div className="grid grid-cols-1 gap-4">
-        {goals.map((goal) => (
-          <div key={goal.id} className="bg-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-white mb-2">
-              {goal.title}
-            </h3>
-            <div className="flex items-center mb-2">
-              <div className="w-full bg-gray-600 rounded-full h-2">
-                <div
-                  className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${goal.progress || 0}%` }}
-                ></div>
-              </div>
-              <span className="ml-2 text-gray-300 text-sm">
-                {goal.progress || 0}%
+        {reports.map((report) => (
+          <div key={report.id} className="bg-gray-700 rounded-lg p-4">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="text-lg font-medium text-white">
+                {report.title || "Report"}
+              </h3>
+              <span className="text-xs text-gray-400">
+                {new Date(report.createdAt).toLocaleDateString()}
               </span>
             </div>
-            <p className="text-gray-300 text-sm">{goal.description}</p>
+            
+            {report.type && (
+              <div className="mb-2">
+                <span className="inline-block px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                  {report.type}
+                </span>
+              </div>
+            )}
+            
+            {report.summary && (
+              <p className="text-gray-300 text-sm mb-3">{report.summary}</p>
+            )}
+            
+            {report.data && (
+              <div className="bg-gray-800 p-3 rounded text-sm text-gray-300">
+                <pre className="whitespace-pre-wrap">{JSON.stringify(report.data, null, 2)}</pre>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -432,19 +454,50 @@ const Profile = () => {
   };
 
   const renderInterestContent = () => {
-    switch (activeSection) {
-      case "posts":
-        return renderPostGrid(userPosts, postsLoading);
-      case "saved":
-        return renderPostGrid(savedPosts, savedLoading);
-      case "liked":
-        return renderPostGrid(likedPosts, likedLoading);
-      case "goals":
-        return renderGoalGrid(sharedGoals, goalsLoading);
-      default:
-        return null;
-    }
-  };
+  switch (activeSection) {
+    case "posts":
+      return renderPostGrid(userPosts, postsLoading);
+    case "saved":
+      return renderPostGrid(savedPosts, savedLoading);
+    case "liked":
+      return renderPostGrid(likedPosts, likedLoading);
+    case "report": // Updated case name
+      // Instead of rendering report grid here, show a message to redirect
+      return (
+        <div className="flex flex-col items-center justify-center min-h-40 py-12 text-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl text-gray-200 mb-2">Generate Your Mental Health Report</h3>
+          <p className="text-gray-400 mb-4">
+            Create a comprehensive PDF report of your mental health data
+          </p>
+          <button
+            onClick={handleReportClick}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+          >
+            Open Report Generator
+          </button>
+        </div>
+      );
+    default:
+      return null;
+  }
+};
+
 
   // Here's the improved UI approach with skeleton loading
   return (
@@ -727,31 +780,31 @@ const Profile = () => {
                     </button>
 
                     <button
-                      onClick={() => setActiveSection("goals")}
-                      className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
-                        activeSection === "goals"
-                          ? "bg-green-800 bg-opacity-50"
-                          : "bg-gray-700 hover:bg-gray-600"
-                      }`}
-                    >
-                      <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center mb-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <span className="text-sm">Shared Goals</span>
-                    </button>
+  onClick={() => setActiveSection("report")}
+  className={`flex flex-col items-center p-4 rounded-lg transition-colors cursor-pointer ${
+    activeSection === "report"
+      ? "bg-blue-800 bg-opacity-50"
+      : "bg-gray-700 hover:bg-gray-600"
+  }`}
+>
+  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mb-2">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-6 w-6 text-white"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  </div>
+  <span className="text-sm">Report</span>
+</button>
                   </div>
 
                   {/* Content based on selected section */}

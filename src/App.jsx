@@ -16,6 +16,7 @@ import Profile from "./pages/Profile/Profile.jsx";
 import Community from "./pages/Community/Community.jsx";
 import AboutUs from './pages/About/AboutUs.jsx';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ReportGenerator from './pages/Profile/ReportGenerator.jsx';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/community" element={<Community />} />
         <Route path="/about" element={<AboutUs />} />
+        <Route path="/report-generator" element={<ReportGenerator />} />
       </Routes>
     </AuthProvider>
   );
