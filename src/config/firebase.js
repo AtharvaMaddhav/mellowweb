@@ -19,3 +19,42 @@ export const provider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;
+
+// Helper function to add a post to a community
+export const addCommunityPost = async (communityId, postData) => {
+    try {
+      const communityRef = doc(db, "Communities", communityId);
+      const postsRef = collection(communityRef, "Posts");
+      
+      const newPost = {
+        ...postData,
+        timestamp: serverTimestamp(),
+        likesCount: 0,
+        commentsCount: 0
+      };
+      
+      return await addDoc(postsRef, newPost);
+    } catch (error) {
+      console.error("Error adding post to community:", error);
+      throw error;
+    }
+  };
+  
+  // Helper function to fetch community posts
+  export const fetchCommunityPosts = async (communityId) => {
+    try {
+      const communityRef = doc(db, "Communities", communityId);
+      const postsRef = collection(communityRef, "Posts");
+      
+      const q = query(postsRef, orderBy("timestamp", "desc"));
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error("Error fetching community posts:", error);
+      throw error;
+    }
+  };

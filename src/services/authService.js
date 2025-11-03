@@ -5,7 +5,7 @@ import {
   onAuthStateChanged, 
   signOut 
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 
 // Function to check user authentication state
 export const checkAuthState = (callback) => {
@@ -46,6 +46,7 @@ export const storeUserData = async (user, authType) => {
         isOnline: true,
         followers: [],
         following: [],
+        mellow_coins: 0,
       });
     } else {
       await setDoc(userRef, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
@@ -55,7 +56,6 @@ export const storeUserData = async (user, authType) => {
   }
 };
 
-// Function to handle email/password login
 export const loginWithEmail = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -70,6 +70,13 @@ export const loginWithEmail = async (email, password) => {
       return null;
     }
 
+    // Check if mellow_coins field exists
+    const userData = userSnap.data();
+    if (!("mellow_coins" in userData)) {
+      await updateDoc(userDocRef, { mellow_coins: 0 });
+      console.log("✅ mellow_coins field added for user:", user.uid);
+    }
+
     await setDoc(userDocRef, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
     return user;
   } catch (error) {
@@ -79,14 +86,39 @@ export const loginWithEmail = async (email, password) => {
   }
 };
 
-// Function to handle Google login
 export const loginWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
-    await storeUserData(result.user, "google");
-    return result.user;
+    const user = result.user;
+
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userDocRef);
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      if (!("mellow_coins" in userData)) {
+        await updateDoc(userDocRef, { mellow_coins: 0 });
+        console.log("✅ mellow_coins field added for Google user:", user.uid);
+      }
+
+      await setDoc(userDocRef, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
+    } else {
+      // User doc might not exist yet, so create it with default data
+      await setDoc(userDocRef, {
+        displayName: user.displayName || "",
+        email: user.email,
+        isOnline: true,
+        lastSeen: serverTimestamp(),
+        mellow_coins: 0,
+        createdAt: serverTimestamp(),
+      });
+      console.log("✅ New user document created with mellow_coins for Google user:", user.uid);
+    }
+
+    return user;
   } catch (error) {
     console.error("Google Login Error:", error.message);
     return null;
   }
 };
+

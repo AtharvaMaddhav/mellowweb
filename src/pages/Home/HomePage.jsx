@@ -20,6 +20,7 @@ const HomePage = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      console.log(user);
       if (!user) navigate('/auth');
     });
 

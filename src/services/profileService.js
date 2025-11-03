@@ -706,15 +706,25 @@ export const profileService = {
 
   // All other existing functions remain the same...
   updateUserProfile: async (userId, userData) => {
-    try {
-      const userDocRef = doc(db, "users", userId);
-      await updateDoc(userDocRef, userData);
-      return true;
-    } catch (error) {
-      console.error("Error updating user profile:", error);
-      throw error;
+  try {
+    const userDocRef = doc(db, "users", userId);
+    const updatePayload = {
+      ...userData,
+      updatedAt: new Date(),
+    };
+
+    // ensure interests is always an array
+    if (userData.interests && !Array.isArray(userData.interests)) {
+      updatePayload.interests = [userData.interests];
     }
-  },
+
+    await updateDoc(userDocRef, updatePayload);
+    return true;
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    throw error;
+  }
+},
 
   uploadProfilePicture: async (userId, file) => {
     try {
