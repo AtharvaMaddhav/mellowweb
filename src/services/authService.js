@@ -59,6 +59,7 @@ export const storeUserData = async (user, authType) => {
 export const loginWithEmail = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log("User Credential Data:", userCredential);
     const user = userCredential.user;
 
     const userDocRef = doc(db, "users", user.uid); 

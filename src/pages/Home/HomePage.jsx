@@ -20,7 +20,7 @@ const HomePage = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      console.log(user);
+      console.log("Found user: ",user);
       if (!user) navigate('/auth');
     });
 
@@ -99,7 +99,7 @@ const HomePage = () => {
 
       <div className="ml-75 flex-1 p-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Welcome to Mellow, {user.displayName || 'Guest'}!</h1>
+          <h1 className="text-4xl font-bold">Welcome to Mellow</h1>
           <button
             onClick={handleLogout}
             className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 cursor-pointer"
