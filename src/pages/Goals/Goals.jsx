@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SideBar from "../SideBar/SideBar.jsx";
 import { Globe, Lock, Filter } from "lucide-react";
 import RecommendedGoalsSection from "./RecommendedGoalsSection";
@@ -40,6 +41,9 @@ const Goals = () => {
   });
   const [isFiltering, setIsFiltering] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   // Listen for authentication state changes
   useEffect(() => {
@@ -57,6 +61,8 @@ const Goals = () => {
     // Clean up the auth listener on component unmount
     return () => unsubscribe();
   }, []);
+
+  const navigate = useNavigate();
 
   // Set up real-time listeners for goals
   useEffect(() => {
@@ -217,6 +223,49 @@ const Goals = () => {
     setIsFiltering(false);
   };
 
+  const normalizeSearchText = (text) => text?.trim().toLowerCase() || "";
+
+  const matchesSearchQuery = (goal, query) => {
+    const title = normalizeSearchText(goal.title || goal.name || "");
+    return title.split(/\s+/).some((word) => word.startsWith(query));
+  };
+
+  useEffect(() => {
+    const queryText = normalizeSearchText(searchQuery);
+    if (!queryText) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let active = true;
+    const debounceTimeout = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const querySnapshot = await getDocs(collection(db, "goals"));
+        const fetchedGoals = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        if (!active) return;
+        setSearchResults(fetchedGoals.filter((goal) => matchesSearchQuery(goal, queryText)));
+      } catch (err) {
+        console.error("Error searching goals:", err);
+        if (active) setSearchResults([]);
+      } finally {
+        if (active) setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      clearTimeout(debounceTimeout);
+    };
+  }, [searchQuery]);
+
+  const hasSearchQuery = normalizeSearchText(searchQuery).length > 0;
+
   return (
     <div className="flex h-screen bg-black text-white">
       {/* Sidebar with reduced width */}
@@ -227,33 +276,68 @@ const Goals = () => {
       {/* Main Content - with more space and shifted leftward */}
       <div className="flex-1 p-5 pl-0 overflow-y-auto overflow-x-hidden h-screen">
         {/* Search Bar */}
-        <div className="w-full p-3 bg-[#333] shadow-md mb-5 rounded-lg">
+        <div className="w-full p-3 bg-[#333] shadow-md mb-5 rounded-lg relative">
           <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             type="text"
             placeholder="Search Goals..."
             className="w-full p-3 bg-[#333] text-white border-none rounded-lg focus:outline-none"
           />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+            {searchLoading ? "Searching..." : ""}
+          </span>
+
+          {hasSearchQuery && (
+            <div className="absolute left-0 right-0 mt-2 bg-[#111] border border-gray-800 rounded-xl shadow-xl max-h-96 overflow-y-auto z-10">
+              {searchLoading ? (
+                <div className="p-4 text-gray-400">Searching...</div>
+              ) : searchResults.length > 0 ? (
+                <ul className="divide-y divide-gray-800">
+                  {searchResults.map((goal) => (
+                    <li
+                      key={goal.id}
+                      onClick={() => navigate(`/goals/${goal.id}`)}
+                      className="cursor-pointer px-4 py-3 hover:bg-[#222] transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-white font-semibold">{goal.title || "Untitled Goal"}</p>
+                          <p className="text-gray-400 text-sm truncate">{goal.description || "No description available."}</p>
+                        </div>
+                        <span className="text-xs text-gray-500">View</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="p-4 text-gray-400">No matching goals found.</div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Show authentication status warning if not logged in */}
-        {!currentUserId && (
-          <div className="bg-yellow-900 text-yellow-100 p-4 rounded-lg mb-5">
-            <p>You are not currently logged in. Please sign in to view and manage your goals.</p>
-          </div>
-        )}
+        {!hasSearchQuery && (
+          <>
+            {/* Show authentication status warning if not logged in */}
+            {!currentUserId && (
+              <div className="bg-yellow-900 text-yellow-100 p-4 rounded-lg mb-5">
+                <p>You are not currently logged in. Please sign in to view and manage your goals.</p>
+              </div>
+            )}
 
-        {/* Recommended Goals Slider - Only show if logged in */}
-        {currentUserId && (
-          <RecommendedGoalsSection 
-            goals={recommendedGoals}
-            currentUserId={currentUserId}
-            onJoinGoal={handleJoinGoal}
-            joiningGoalId={joiningGoalId}
-          />
-        )}
+            {/* Recommended Goals Slider - Only show if logged in */}
+            {currentUserId && (
+              <RecommendedGoalsSection 
+                goals={recommendedGoals}
+                currentUserId={currentUserId}
+                onJoinGoal={handleJoinGoal}
+                joiningGoalId={joiningGoalId}
+              />
+            )}
 
-        {/* Goals Section with Enhanced UI - Shifted left */}
-        <div className="bg-[#1A1A1A] rounded-xl p-6 mb-8 shadow-xl border border-gray-800">
+            {/* Goals Section with Enhanced UI - Shifted left */}
+            <div className="bg-[#1A1A1A] rounded-xl p-6 mb-8 shadow-xl border border-gray-800">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Your Goals</h2>
             <div className="flex space-x-4">
@@ -342,6 +426,8 @@ const Goals = () => {
               />
           )}
         </div>
+          </>
+        )}
       </div>
 
       {/* Create Goal Modal */}
