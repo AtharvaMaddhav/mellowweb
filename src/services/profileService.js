@@ -459,7 +459,9 @@ import {
   where,
   getDocs,
   orderBy,
-  Timestamp
+  Timestamp,
+  arrayUnion,
+  arrayRemove
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -991,6 +993,128 @@ export const profileService = {
     } catch (error) {
       console.error("Error fetching shared goals:", error);
       throw error;
+    }
+  },
+
+  // Search users by name (matches from start of words, case-insensitive)
+  searchUsers: async (searchTerm) => {
+    try {
+      const usersQuery = query(collection(db, "users"));
+      const usersSnapshot = await getDocs(usersQuery);
+      const users = [];
+
+      const searchLower = searchTerm.toLowerCase();
+
+      usersSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        const name = userData.name || "";
+        const nameWords = name.toLowerCase().split(/\s+/);
+
+        // Check if any word in the name starts with the search term
+        const matches = nameWords.some(word => word.startsWith(searchLower));
+
+        if (matches) {
+          users.push({
+            uid: doc.id,
+            ...userData,
+          });
+        }
+      });
+
+      return users;
+    } catch (error) {
+      console.error("Error searching users:", error);
+      throw error;
+    }
+  },
+
+  // Follow a user
+  followUser: async (currentUserId, targetUserId) => {
+    try {
+      console.log('FollowUser called:', { currentUserId, targetUserId });
+      const targetUserRef = doc(db, "users", targetUserId);
+      const currentUserRef = doc(db, "users", currentUserId);
+
+      // First, ensure both user documents exist
+      const [targetUserDoc, currentUserDoc] = await Promise.all([
+        getDoc(targetUserRef),
+        getDoc(currentUserRef)
+      ]);
+
+      if (!targetUserDoc.exists()) {
+        console.error('Target user document does not exist');
+        throw new Error('Target user not found');
+      }
+
+      if (!currentUserDoc.exists()) {
+        console.error('Current user document does not exist');
+        throw new Error('Current user not found');
+      }
+
+      // Add current user to target's followers
+      console.log('Adding to target user followers');
+      await updateDoc(targetUserRef, {
+        followers: arrayUnion(currentUserId),
+      });
+
+      // Add target user to current user's following
+      console.log('Adding to current user following');
+      await updateDoc(currentUserRef, {
+        following: arrayUnion(targetUserId),
+      });
+
+      console.log('Follow operation completed successfully');
+      return true;
+    } catch (error) {
+      console.error("Error following user:", error);
+      throw error;
+    }
+  },
+
+  // Unfollow a user
+  unfollowUser: async (currentUserId, targetUserId) => {
+    try {
+      console.log('UnfollowUser called:', { currentUserId, targetUserId });
+      const targetUserRef = doc(db, "users", targetUserId);
+      const currentUserRef = doc(db, "users", currentUserId);
+
+      // Remove current user from target's followers
+      console.log('Removing from target user followers');
+      await updateDoc(targetUserRef, {
+        followers: arrayRemove(currentUserId),
+      });
+
+      // Remove target user from current user's following
+      console.log('Removing from current user following');
+      await updateDoc(currentUserRef, {
+        following: arrayRemove(targetUserId),
+      });
+
+      console.log('Unfollow operation completed successfully');
+      return true;
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      throw error;
+    }
+  },
+
+  // Check if current user is following target user
+  isFollowing: async (currentUserId, targetUserId) => {
+    try {
+      console.log('Checking follow status:', { currentUserId, targetUserId });
+      const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
+      if (targetUserDoc.exists()) {
+        const userData = targetUserDoc.data();
+        const followers = userData.followers || [];
+        const isFollowing = followers.includes(currentUserId);
+        console.log('Follow status result:', isFollowing, 'followers array:', followers);
+        return isFollowing;
+      }
+      console.log('Target user document does not exist');
+      return false;
+    } catch (error) {
+      console.error("Error checking follow status:", error);
+      return false;
     }
   },
 };
