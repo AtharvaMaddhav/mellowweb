@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Users, CheckCircle, Clock, Send } from "lucide-rea
 import { ViewOtherProfile } from "../Profile/ViewOtherProfile";
 import { useAuth } from "../../context/AuthContext"; // Import Auth context to check current user
 import { subscribeToGoalChat, sendGoalChatMessage } from "../../services/goalChatService";
+import { uploadMediaToCloudinary } from "../../services/mediaService.js";
 import { profileService } from "../../services/profileService.js";
 import { notificationService } from "../../services/notificationService.js";
 
@@ -27,8 +28,13 @@ const GoalDetails = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState(null);
   const [invitedIds, setInvitedIds] = useState([]);
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [mediaError, setMediaError] = useState(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [userNamesById, setUserNamesById] = useState({});
   const userNamesByIdRef = useRef({});
+  const fileInputRef = useRef(null);
   const { goalId } = useParams(); // This is correct - extracting goalId from URL params
   const navigate = useNavigate();
 
@@ -275,6 +281,41 @@ const GoalDetails = () => {
     }
   };
 
+  const handleMediaSelect = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      setMediaError("Please select an image or video file.");
+      setMediaFile(null);
+      setMediaPreview(null);
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      setMediaError("File size must be 50MB or less.");
+      setMediaFile(null);
+      setMediaPreview(null);
+      return;
+    }
+
+    setMediaFile(file);
+    setMediaPreview(URL.createObjectURL(file));
+    setMediaError(null);
+  };
+
+  const handleRemoveMedia = () => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview);
+    }
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleJoinGoal = async () => {
     if (!user || !goalData) return;
 
@@ -318,24 +359,53 @@ const GoalDetails = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || !user || !goalData) {
+    if (!newMessage.trim() && !mediaFile) {
+      return;
+    }
+
+    if (!user || !goalData) {
       return;
     }
 
     setIsSendingMessage(true);
+    setMediaError(null);
+
     try {
+      let mediaUrl = null;
+      let mediaType = null;
+
+      if (mediaFile) {
+        setUploadingMedia(true);
+        const uploadResult = await uploadMediaToCloudinary(mediaFile);
+        setUploadingMedia(false);
+
+        if (!uploadResult.success) {
+          setMediaError(uploadResult.error || "Unable to upload media.");
+          return;
+        }
+
+        mediaUrl = uploadResult.url;
+        mediaType = mediaFile.type.startsWith("video/") ? "video" : "image";
+      }
+
       await sendGoalChatMessage(
         goalId,
         user.uid,
-        newMessage,
+        newMessage.trim(),
         currentUserName || "Anonymous",
-        currentUserAvatar || "/download.png"
+        currentUserAvatar || "/download.png",
+        mediaType,
+        mediaUrl
       );
+
       setNewMessage("");
+      handleRemoveMedia();
     } catch (error) {
       console.error("Error sending message:", error);
+      setMediaError("Failed to send message. Please try again.");
     } finally {
       setIsSendingMessage(false);
+      setUploadingMedia(false);
     }
   };
 
@@ -769,9 +839,34 @@ const GoalDetails = () => {
                                   : "Now"}
                               </span>
                             </div>
-                            <p className="text-sm leading-6 break-words">
-                              {message.message}
-                            </p>
+                            {message.mediaUrl && (
+                              <div className="mb-3">
+                                {message.mediaType === "video" ? (
+                                  <video
+                                    controls
+                                    src={message.mediaUrl}
+                                    className="max-h-64 w-full rounded-2xl object-cover"
+                                  />
+                                ) : (
+                                  <img
+                                    src={message.mediaUrl}
+                                    alt="Chat media"
+                                    className="max-h-64 w-full rounded-2xl object-cover"
+                                  />
+                                )}
+                              </div>
+                            )}
+                            {message.message ? (
+                              <p className="text-sm leading-6 break-words">
+                                {message.message}
+                              </p>
+                            ) : (
+                              !message.mediaUrl && (
+                                <p className="text-sm leading-6 break-words">
+                                  {message.message}
+                                </p>
+                              )
+                            )}
                           </div>
                         </div>
                       </div>
@@ -784,23 +879,75 @@ const GoalDetails = () => {
               {user && isCurrentUserMember ? (
                 <form
                   onSubmit={handleSendMessage}
-                  className="border-t border-gray-800 p-4 flex gap-2"
+                  className="border-t border-gray-800 p-4"
                 >
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-[#2A2A2A] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    disabled={isSendingMessage}
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSendingMessage || !newMessage.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors"
-                  >
-                    <Send size={18} />
-                  </button>
+                  <div className="space-y-3">
+                    {mediaPreview && (
+                      <div className="rounded-2xl border border-gray-700 bg-[#111111] p-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="max-w-[70%]">
+                            {mediaFile?.type.startsWith("video/") ? (
+                              <video
+                                controls
+                                src={mediaPreview}
+                                className="max-h-40 w-full rounded-2xl object-cover"
+                              />
+                            ) : (
+                              <img
+                                src={mediaPreview}
+                                alt="Preview"
+                                className="max-h-40 w-full rounded-2xl object-cover"
+                              />
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveMedia}
+                            className="text-sm text-purple-300 hover:text-white"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="cursor-pointer rounded-full bg-[#2A2A2A] px-4 py-2 text-sm text-gray-200 hover:bg-[#333333] transition">
+                        Attach
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*,video/*"
+                          onChange={handleMediaSelect}
+                          className="hidden"
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type your message..."
+                        className="flex-1 min-w-[220px] bg-[#2A2A2A] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        disabled={isSendingMessage || uploadingMedia}
+                      />
+                      <button
+                        type="submit"
+                        disabled={
+                          isSendingMessage || uploadingMedia ||
+                          (!newMessage.trim() && !mediaFile)
+                        }
+                        className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors"
+                      >
+                        <Send size={18} />
+                      </button>
+                    </div>
+
+                    {(mediaError || uploadingMedia) && (
+                      <p className="text-sm text-red-400">
+                        {uploadingMedia ? "Uploading media..." : mediaError}
+                      </p>
+                    )}
+                  </div>
                 </form>
               ) : (
                 <div className="border-t border-gray-800 p-4 text-center text-gray-400 text-sm">

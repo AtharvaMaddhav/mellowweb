@@ -12,7 +12,15 @@ import {
 import { db } from "../config/firebase";
 
 // Send a message to a goal chat
-export const sendGoalChatMessage = async (goalId, userId, message, userName, userAvatar) => {
+export const sendGoalChatMessage = async (
+  goalId,
+  userId,
+  message,
+  userName,
+  userAvatar,
+  mediaType = null,
+  mediaUrl = null
+) => {
   try {
     const goalChatsRef = collection(db, "goals", goalId, "goalChats");
     
@@ -20,7 +28,9 @@ export const sendGoalChatMessage = async (goalId, userId, message, userName, use
       userId,
       userName,
       userAvatar,
-      message,
+      message: message || "",
+      mediaType,
+      mediaUrl,
       timestamp: serverTimestamp(),
     };
     
