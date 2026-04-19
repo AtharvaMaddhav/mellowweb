@@ -6,6 +6,9 @@ import SideBar from '../SideBar/SideBar';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { FaCalendarAlt } from 'react-icons/fa'; // Importing calendar icon
+import EmotionDialog from './EmotionDialog';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const HomePage = () => {
   const [loading, setLoading] = useState(true);
@@ -14,14 +17,27 @@ const HomePage = () => {
   const [funTasks, setFunTasks] = useState([]);
   const [pastActivities, setPastActivities] = useState([]);
   const [completing, setCompleting] = useState(false);
+  const [showEmotionDialog, setShowEmotionDialog] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       console.log("Found user: ",user);
-      if (!user) navigate('/auth');
+      if (user) {
+        // Check if user has responded to emotion today
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          const today = new Date().toISOString().split('T')[0];
+          const hasRespondedToday = userData.dailyEmotions?.some(entry => entry.date === today);
+          setShowEmotionDialog(!hasRespondedToday);
+        }
+      } else {
+        navigate('/auth');
+      }
     });
 
     const fetchDailyActivity = async () => {
@@ -63,23 +79,12 @@ const HomePage = () => {
     }
   };
 
-  const handleCompleteActivity = async () => {
-    if (!user) {
-      console.error("User not logged in");
-      alert("Please log in to complete the activity.");
-      return;
-    }
+  const handleEmotionDialogClose = () => {
+    setShowEmotionDialog(false);
+  };
 
-    try {
-      setCompleting(true);
-      const updatedActivity = await markActivityCompleted(user.uid);
-      setDailyActivity(updatedActivity);
-    } catch (error) {
-      console.error("Error completing activity:", error);
-      alert("Failed to mark activity as completed. Please try again.");
-    } finally {
-      setCompleting(false);
-    }
+  const handleEmotionDialogSubmit = () => {
+    setShowEmotionDialog(false);
   };
 
   if (loading) {
@@ -215,6 +220,14 @@ const HomePage = () => {
         </div>
 
       </div>
+
+      {showEmotionDialog && user && (
+        <EmotionDialog
+          user={user}
+          onClose={handleEmotionDialogClose}
+          onSubmit={handleEmotionDialogSubmit}
+        />
+      )}
     </div>
   );
 };
