@@ -47,6 +47,7 @@ export const storeUserData = async (user, authType) => {
         followers: [],
         following: [],
         mellow_coins: 0,
+        dailyEmotions: [],
       });
     } else {
       await setDoc(userRef, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
@@ -78,6 +79,12 @@ export const loginWithEmail = async (email, password) => {
       console.log("✅ mellow_coins field added for user:", user.uid);
     }
 
+    // Check if dailyEmotions field exists
+    if (!("dailyEmotions" in userData)) {
+      await updateDoc(userDocRef, { dailyEmotions: [] });
+      console.log("✅ dailyEmotions field added for user:", user.uid);
+    }
+
     await setDoc(userDocRef, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
     return user;
   } catch (error) {
@@ -102,6 +109,11 @@ export const loginWithGoogle = async () => {
         console.log("✅ mellow_coins field added for Google user:", user.uid);
       }
 
+      if (!("dailyEmotions" in userData)) {
+        await updateDoc(userDocRef, { dailyEmotions: [] });
+        console.log("✅ dailyEmotions field added for Google user:", user.uid);
+      }
+
       await setDoc(userDocRef, { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
     } else {
       // User doc might not exist yet, so create it with default data
@@ -111,9 +123,10 @@ export const loginWithGoogle = async () => {
         isOnline: true,
         lastSeen: serverTimestamp(),
         mellow_coins: 0,
+        dailyEmotions: [],
         createdAt: serverTimestamp(),
       });
-      console.log("✅ New user document created with mellow_coins for Google user:", user.uid);
+      console.log("✅ New user document created with mellow_coins and dailyEmotions for Google user:", user.uid);
     }
 
     return user;
