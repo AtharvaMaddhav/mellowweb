@@ -79,6 +79,21 @@ const HomePage = () => {
     }
   };
 
+  const handleCompleteActivity = async () => {
+    if (!user || completing) return;
+    
+    try {
+      setCompleting(true);
+      const updatedActivity = await markActivityCompleted(user.uid);
+      setDailyActivity(updatedActivity);
+      console.log("Activity completed successfully!");
+    } catch (error) {
+      console.error("Error completing activity:", error.message);
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const handleEmotionDialogClose = () => {
     setShowEmotionDialog(false);
   };
